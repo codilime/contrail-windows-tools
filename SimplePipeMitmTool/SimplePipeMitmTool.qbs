@@ -16,7 +16,7 @@ CppApplication {
     cpp.includePaths: [BOOST_ROOT, "../Common/"]
     cpp.libraryPaths: [BOOST_ROOT + "/stage/lib/"]
     cpp.runtimeLibrary: "static"
-    cpp.cxxLanguageVersion: "c++14"
+    cpp.cxxLanguageVersion: "c++11"
 
     Group {
         fileTagsFilter: product.type
