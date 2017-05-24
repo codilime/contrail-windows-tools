@@ -12,11 +12,11 @@ PipeTestTool::PipeTestTool(const wchar_t *pipe_name, unsigned long timeout_ms) :
     timer(ios),
     timeout_ms(timeout_ms)
 {
-    DWORD access_flags = GENERIC_READ | GENERIC_WRITE;
-    DWORD attrs = OPEN_EXISTING;
-    DWORD flags = FILE_FLAG_OVERLAPPED;
+    const DWORD access_flags = GENERIC_READ | GENERIC_WRITE;
+    const DWORD attrs = OPEN_EXISTING;
+    const DWORD flags = FILE_FLAG_OVERLAPPED;
 
-    HANDLE handle = CreateFile(pipe_name, access_flags, 0, NULL, attrs, flags, NULL);
+    const HANDLE handle = CreateFile(pipe_name, access_flags, 0, NULL, attrs, flags, NULL);
     if (handle == INVALID_HANDLE_VALUE)
         throw std::runtime_error("Error while opening pipe: " + Utils::GetFormattedWindowsErrorMsg());
 
@@ -93,10 +93,10 @@ void PipeTestTool::WriteFakeData(size_t echo_len)
     CopyDataToBuff(FakeData::FakeEtherHdr);
     CopyDataToBuff(FakeData::FakeAgentHdr);
 
-    size_t headers_len = sizeof(FakeData::ether_header) + sizeof(FakeData::agent_hdr);
+    const size_t headers_len = sizeof(FakeData::ether_header) + sizeof(FakeData::agent_hdr);
     if (echo_len >= headers_len) {
-        size_t len = echo_len - headers_len;
-        auto buff = boost::asio::buffer_cast<void*>(write_buff.prepare(len));
+        const size_t len = echo_len - headers_len;
+        const auto buff = boost::asio::buffer_cast<void*>(write_buff.prepare(len));
         memcpy(buff, read_buff + headers_len, len);
         write_buff.commit(len);
     }

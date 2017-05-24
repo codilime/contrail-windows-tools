@@ -23,7 +23,7 @@ private:
     template <typename T>
     void CopyDataToBuff(const T &data)
     {
-        auto size = sizeof(data);
+        const auto size = sizeof(data);
         auto buff = boost::asio::buffer_cast<void*>(write_buff.prepare(size));
 
         memcpy(buff, &data, size);

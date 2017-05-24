@@ -5,14 +5,14 @@
 
 std::string Utils::GetFormattedWindowsErrorMsg()
 {
-    DWORD error = GetLastError();
+    const DWORD error = GetLastError();
     LPSTR message = NULL;
 
-    DWORD flags = (FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                   FORMAT_MESSAGE_FROM_SYSTEM |
-                   FORMAT_MESSAGE_IGNORE_INSERTS);
-    DWORD lang_id = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
-    DWORD ret = FormatMessageA(flags, NULL, error, lang_id, (LPSTR)message, 0, NULL);
+    const DWORD flags = (FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                         FORMAT_MESSAGE_FROM_SYSTEM |
+                         FORMAT_MESSAGE_IGNORE_INSERTS);
+    const DWORD lang_id = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
+    const DWORD ret = FormatMessageA(flags, NULL, error, lang_id, (LPSTR)message, 0, NULL);
 
     std::ostringstream sstr;
 
@@ -45,7 +45,7 @@ std::string Utils::DataToHex(const std::vector<char> &data)
 
 std::wstring Utils::StrToWide(const std::string &str)
 {
-    int buf_size = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), -1, NULL, 0);
+    const int buf_size = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), -1, NULL, 0);
     if (buf_size == 0) {
         throw std::runtime_error("Error converting string: " + Utils::GetFormattedWindowsErrorMsg());
     }
@@ -53,7 +53,7 @@ std::wstring Utils::StrToWide(const std::string &str)
     const auto wide_name = std::unique_ptr<wchar_t[]>(new wchar_t[buf_size]);
 
     if (!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), -1, wide_name.get(), buf_size)) {
-         throw std::runtime_error("Error converting string: " + Utils::GetFormattedWindowsErrorMsg());
+        throw std::runtime_error("Error converting string: " + Utils::GetFormattedWindowsErrorMsg());
     }
 
     return wide_name.get();

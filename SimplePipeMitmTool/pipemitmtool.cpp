@@ -38,8 +38,8 @@ void PipeMitmTool::HandleRead(const std::string &dir_str, const std::vector<char
 PipeMitmTool::PipeContext::PipeContext(io_service &ios, const std::string &pipe_name, bool create) :
     stream(ios)
 {
-    auto wname = Utils::StrToWide(pipe_name);
-    HANDLE handle = create ? CreatePipe(wname) : OpenPipe(wname);
+    const auto wname = Utils::StrToWide(pipe_name);
+    const HANDLE handle = create ? CreatePipe(wname) : OpenPipe(wname);
     stream.assign(handle);
 }
 
@@ -63,10 +63,10 @@ void PipeMitmTool::PipeContext::Write(const std::vector<char> &data)
 
 HANDLE PipeMitmTool::PipeContext::CreatePipe(const std::wstring &pipe_name)
 {
-    DWORD open_mode = PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE;
-    DWORD pipe_mode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
+    const DWORD open_mode = PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE;
+    const DWORD pipe_mode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
 
-    HANDLE handle = CreateNamedPipe(pipe_name.c_str(), open_mode, pipe_mode, 1, MaxReadLen, MaxReadLen, 0, NULL);
+    const HANDLE handle = CreateNamedPipe(pipe_name.c_str(), open_mode, pipe_mode, 1, MaxReadLen, MaxReadLen, 0, NULL);
     if (handle == INVALID_HANDLE_VALUE)
         throw std::runtime_error("Error while creating pipe: " + Utils::GetFormattedWindowsErrorMsg());
 
@@ -75,11 +75,11 @@ HANDLE PipeMitmTool::PipeContext::CreatePipe(const std::wstring &pipe_name)
 
 HANDLE PipeMitmTool::PipeContext::OpenPipe(const std::wstring &pipe_name)
 {
-    DWORD access_flags = GENERIC_READ | GENERIC_WRITE;
-    DWORD attrs = OPEN_EXISTING;
-    DWORD flags = FILE_FLAG_OVERLAPPED;
+    const DWORD access_flags = GENERIC_READ | GENERIC_WRITE;
+    const DWORD attrs = OPEN_EXISTING;
+    const DWORD flags = FILE_FLAG_OVERLAPPED;
 
-    HANDLE handle = CreateFile(pipe_name.c_str(), access_flags, 0, NULL, attrs, flags, NULL);
+    const HANDLE handle = CreateFile(pipe_name.c_str(), access_flags, 0, NULL, attrs, flags, NULL);
     if (handle == INVALID_HANDLE_VALUE)
         throw std::runtime_error("Error while opening pipe: " + Utils::GetFormattedWindowsErrorMsg());
 
