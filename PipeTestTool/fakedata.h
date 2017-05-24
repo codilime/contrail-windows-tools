@@ -6,13 +6,16 @@
 class FakeData
 {
 public:
+#pragma pack(push, 1)
     struct ether_header
     {
         unsigned char ether_dhost[6];
         unsigned char ether_shost[6];
         unsigned short ether_type;
     };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
     struct agent_hdr
     {
         unsigned short hdr_ifindex;
@@ -26,6 +29,7 @@ public:
         uint8_t hdr_cmd_param_5;
         uint8_t hdr_cmd_param_5_pack[3];
     };
+#pragma pack(pop)
 
     static const ether_header FakeEtherHdr;
     static const agent_hdr FakeAgentHdr;
