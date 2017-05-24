@@ -50,16 +50,13 @@ std::wstring Utils::StrToWide(const std::string &str)
         throw std::runtime_error("Error converting string: " + Utils::GetFormattedWindowsErrorMsg());
     }
 
-    wchar_t* wide_name = new wchar_t[buf_size];
+    const auto wide_name = std::unique_ptr<wchar_t[]>(new wchar_t[buf_size]);
 
-    if (!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), -1, wide_name, buf_size)) {
+    if (!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), -1, wide_name.get(), buf_size)) {
          throw std::runtime_error("Error converting string: " + Utils::GetFormattedWindowsErrorMsg());
     }
 
-    std::wstring wide_str = wide_name;
-    delete [] wide_name;
-
-    return wide_str;
+    return wide_name.get();
 }
 
 std::vector<char> Utils::StreambufToVector(boost::asio::streambuf &buf)
