@@ -6,6 +6,9 @@ if ($Env:ENABLE_TRACE -eq $true) {
 $Env:PSModulePath = [System.Environment]::GetEnvironmentVariable("PSModulePath", "Machine")
 $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
 
+# Stop script on error
+$ErrorActionPreference = "Stop"
+
 Write-Host "Sourcing VS environment variables"
 Invoke-BatchFile "$Env:VS_SETUP_ENV_SCRIPT_PATH"
 
