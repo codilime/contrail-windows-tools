@@ -21,11 +21,11 @@ git clone -b $Env:CONTROLLER_BRANCH $Env:CONTROLLER_REPO_URL controller/
 git clone -b $Env:GENERATEDS_BRANCH $Env:GENERATEDS_REPO_URL tools/generateDS/
 
 Write-Host "Copying third-party dependencies"
-mkdir third_party/
-cp -Recurse "$Env:THIRD_PARTY_CACHE_PATH\agent\*" third_party/
-cp -Recurse "$Env:THIRD_PARTY_CACHE_PATH\common\*" third_party/
+New-Item -ItemType Directory ./third_party
+Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\agent\*" third_party/
+Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\common\*" third_party/
 
-cp tools/build/SConstruct ./
+Copy-Item tools/build/SConstruct ./
 
 Write-Host "Building Agent"
 scons -Q contrail-vrouter-agent
