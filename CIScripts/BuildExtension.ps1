@@ -18,13 +18,13 @@ git clone -b $Env:SANDESH_BRANCH $Env:SANDESH_REPO_URL tools/sandesh/
 
 Write-Host "Copying third-party dependencies"
 mkdir third_party/
-cp -Recurse "$Env:THIRD_PARTY_CACHE_PATH\extension\*" third_party\
-cp -Recurse "$Env:THIRD_PARTY_CACHE_PATH\common\*" third_party\
-cp -Recurse third_party\cmocka vrouter\test\
+Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\extension\*" third_party\
+Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\common\*" third_party\
+Copy-Item -Recurse third_party\cmocka vrouter\test\
 
 Write-Host "Building Extension and Utils"
 $cerp = Get-Content $Env:CERT_PASSWORD_FILE_PATH
-devenv.com /Rebuild "Debug|x64" vrouter\vRouter.sln
+devenv.com /Build "Debug|x64" vrouter\vRouter.sln
 
 $vRouterMSI = "vrouter\windows\installer\vrouterMSI\Debug\vRouter.msi"
 $utilMSI = "vrouter\windows\installer\utilsMSI\Debug\utilsMSI.msi"
