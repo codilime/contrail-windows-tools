@@ -23,15 +23,11 @@ $srcPath = "$Env:GOPATH/src/$Env:DRIVER_SRC_PATH"
 Write-Host $srcPath
 
 Write-Host "Precompiling tests"
-.\ginkgo.exe build $srcPath/driver
-.\ginkgo.exe build $srcPath/controller
-.\ginkgo.exe build $srcPath/hns
-.\ginkgo.exe build $srcPath/hnsManager
-
-Move-Item $srcPath/driver/driver.test ./
-Move-Item $srcPath/controller/controller.test ./
-Move-Item $srcPath/hns/hns.test ./
-Move-Item $srcPath/hnsManager/hnsManager.test ./
+$modules = @("driver", "controller", "hns", "hnsManager")
+$modules.ForEach({
+    .\ginkgo.exe build $srcPath/$_
+    Move-Item $srcPath/$_/$_.test ./
+})
 
 Write-Host "Copying Agent API python script"
 Copy-Item $srcPath/scripts/agent_api.py ./
