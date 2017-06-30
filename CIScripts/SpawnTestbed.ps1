@@ -40,7 +40,7 @@ $VMNames = $Env:VM_NAMES.Split(",")
 for ($i = 0; $i -lt $VMNames.Count; $i++) {
     # Replace all empty or "Auto" names to random generated names
     if (($VMNames[$i] -eq "Auto") -or ($VMNames[$i].Length -eq 0)) {
-        $VMNames[$i] = "TB-" + [string]([guid]::NewGuid().Guid).Replace("-", "").ToUpper().Substring(0, 6)
+        $VMNames[$i] = "Test-" + [string]([guid]::NewGuid().Guid).Replace("-", "").ToUpper().Substring(0, 6)
     }
 }
 
