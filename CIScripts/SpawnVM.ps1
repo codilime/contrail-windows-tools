@@ -40,6 +40,7 @@ function New-TestbedVMs {
         Param ([Parameter(Mandatory = $true)] [string] $VMName,
                [Parameter(Mandatory = $true)] [NewVMCreationSettings] $VMCreationSettings)
 
+        Write-Host "Creating and starting $VMName"
         $ResourcePool = Get-ResourcePool -Name $VMCreationSettings.ResourcePoolName
         $Template = Get-Template -Name $VMCreationSettings.TemplateName
         $CustomizationSpec = Get-OSCustomizationSpec -Name $VMCreationSettings.CustomizationSpecName
@@ -57,7 +58,7 @@ function New-TestbedVMs {
         Param ([Parameter(Mandatory = $true)] [Collections.Generic.List[String]] $VMNamesList,
                [Parameter(Mandatory = $false)] [int] $MaxWaitMinutes = 15)
 
-        For ($RetryNum = 0; $VMNamesList.Count -ne 0; ) {
+        for ($RetryNum = 0; $VMNamesList.Count -ne 0; ) {
             Write-Host "Retry number $RetryNum"
             ping $VMNamesList[0] | Out-Null
 
@@ -70,11 +71,9 @@ function New-TestbedVMs {
             $RetryNum++
 
             if ($RetryNum -gt ($MaxWaitMinutes * 2)) {
-                return $false
+                throw "Waited for too long. The VMs did not respond in maximum expected time."
             }
         }
-
-        return $true
     }
 
     function New-RemoteSessions {
@@ -99,6 +98,7 @@ function New-TestbedVMs {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
+            # Enable tracing of NBL owner, so that !ndiskd.pendingnbls debugger extension can search and identify lost NBLs.
             New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\NDIS\Parameters" -Name TrackNblOwner -Value 1 -PropertyType DWORD -Force | Out-Null
         }
     }
@@ -111,10 +111,11 @@ function New-TestbedVMs {
         $DumpFilename = $DumpFilesLocation + "\" + $DumpFilesBaseName + "_" + $Session.ComputerName + ".dmp"
 
         Invoke-Command -Session $Session -ScriptBlock {
-            Get-Disk | Where-Object PartitionStyle -eq 'raw' |
+            # TODO: Fix after JW-796
+            <#Get-Disk | Where-Object PartitionStyle -eq 'raw' |
                 Initialize-Disk -PartitionStyle MBR -PassThru |
                 New-Partition -AssignDriveLetter -UseMaximumSize |
-                Format-Volume -FileSystem NTFS -NewFileSystemLabel "DUMP_HD" -Confirm:$false | Out-Null
+                Format-Volume -FileSystem NTFS -NewFileSystemLabel "DUMP_HD" -Confirm:$false | Out-Null#>
 
             New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl" -Name DumpFile -PropertyType ExpandString -Value $Using:DumpFilename -Force | Out-Null
         }
@@ -136,7 +137,7 @@ function New-TestbedVMs {
         Write-Host "Copying Contrail vRouter API"
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
 
-        Write-Host "Copying vtest"
+        Write-Host "Copying vtest scenarios"
         Copy-Item -ToSession $Session -Path "vrouter\utils\vtest" -Destination C:\Artifacts\ -Recurse -Force
 
         Write-Host "Copying vRouter and Utils MSIs"
@@ -148,16 +149,16 @@ function New-TestbedVMs {
             Write-Host "Installing Contrail vRouter API"
             pip2 install C:\Artifacts\contrail-vrouter-api-1.0.tar.gz | Out-Null
 
-            Write-Host "Installing Docker driver"
-            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\installer.msi", "/quiet") -Wait
-
-            Write-Host "Installing Utils"
-            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\utilsMSI.msi", "/quiet") -Wait
-
             Write-Host "Installing vRouter Extension"
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
             Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\vRouter.msi", "/quiet") -Wait
+
+            Write-Host "Installing Utils"
+            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\utilsMSI.msi", "/quiet") -Wait
+
+            Write-Host "Installing Docker driver"
+            Start-Process msiexec.exe -ArgumentList @("/i", "C:\Artifacts\installer.msi", "/quiet") -Wait
 
             # Refresh Path
             $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -178,11 +179,7 @@ function New-TestbedVMs {
 
     Write-Host "Waiting for VMs to start..."
     $VMsList = [Collections.Generic.List[String]] $VMNames
-    $Res = Wait-VMs -VMNames $VMsList
-    if ($Res -eq $false) {
-        Write-Host "Waited for too long, aborting."
-        return $false
-    }
+    Wait-VMs -VMNames $VMsList
 
     $Sessions = New-RemoteSessions -VMNames $VMNames -Credentials $VMCredentials
 
