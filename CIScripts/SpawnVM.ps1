@@ -59,7 +59,8 @@ function New-TestbedVMs {
         Param ([Parameter(Mandatory = $true)] [Collections.Generic.List[String]] $VMNamesList,
                [Parameter(Mandatory = $false)] [int] $MaxWaitMinutes = 15)
 
-        $MaxRetries = ($MaxWaitMinutes * 2)
+        $DelaySec = 30
+        $MaxRetries = [math]::Ceiling($MaxWaitMinutes * 60 / $DelaySec)
 
         for ($RetryNum = 0; $VMNamesList.Count -ne 0; ) {
             Write-Host "Retry number $RetryNum / $MaxRetries"
@@ -70,7 +71,7 @@ function New-TestbedVMs {
                 continue
             }
 
-            Start-Sleep -s 30
+            Start-Sleep -s $DelaySec
             $RetryNum++
 
             if ($RetryNum -gt $MaxRetries) {
