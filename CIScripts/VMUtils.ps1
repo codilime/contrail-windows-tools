@@ -24,6 +24,8 @@ function Initialize-VIServer {
     }
 
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
+    Set-PowerCLIConfiguration -DefaultVIServerMode Single -Confirm:$false | Out-Null
+
     Connect-VIServer -User $VIServerAccessData.Username -Password $VIServerAccessData.Password -Server $VIServerAccessData.Server | Out-Null
 
     Pop-Location
