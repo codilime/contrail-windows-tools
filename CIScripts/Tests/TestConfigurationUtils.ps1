@@ -164,12 +164,11 @@ function Initialize-TestConfiguration {
 
 function Clear-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [string] $VMSwitchName,
-           [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     Write-Host "Cleaning up test configuration"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-DockerDriver -Session $Session
-    Disable-VRouterExtension -Session $Session -VMSwitchName $VMSwitchName -ForwardingExtensionName $ForwardingExtensionName
+    Disable-VRouterExtension -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
 }
