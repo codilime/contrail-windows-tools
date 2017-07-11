@@ -22,18 +22,20 @@ function Enable-VRouterExtension {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
-           [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
+           [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName,
+           [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet")
 
     Write-Host "Enabling Extension"
 
-    Invoke-Command -Session $sess -ScriptBlock {
-        New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name test_network
+    Invoke-Command -Session $Session -ScriptBlock {
+        New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
         Enable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName | Out-Null
     }
 }
 
 function Disable-VRouterExtension {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+           [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
 
@@ -41,7 +43,7 @@ function Disable-VRouterExtension {
 
     Invoke-Command -Session $Session -ScriptBlock {
         Disable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
-        Get-ContainerNetwork | Remove-ContainerNetwork -Force
+        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:AdapterName | Remove-ContainerNetwork -Force
     }
 }
 
@@ -74,11 +76,12 @@ function Enable-DockerDriver {
 
         Start-Job -ScriptBlock {
             $Configuration = $Using:Configuration
+            $TenantName = $Using:TenantName
 
             $Env:OS_USERNAME = $Configuration.Username
             $Env:OS_PASSWORD = $Configuration.Password
             $Env:OS_AUTH_URL = $Configuration.AuthUrl
-            $Env:OS_TENANT_NAME = $Using:TenantName
+            $Env:OS_TENANT_NAME = $TenantName
 
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $Configuration.ControllerIP -adapter $Using:AdapterName -vswitchName "Layered <adapter>"
         } | Out-Null
@@ -170,5 +173,6 @@ function Clear-TestConfiguration {
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-DockerDriver -Session $Session
-    Disable-VRouterExtension -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
+    Disable-VRouterExtension -Session $Session -AdapterName $TestConfiguration.AdapterName `
+        -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
 }
