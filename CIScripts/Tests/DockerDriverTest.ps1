@@ -9,7 +9,7 @@ function Test-DockerDriver {
 
     $TestFiles = @("controller", "hns", "hnsManager", "driver")
     foreach ($TestFile in $TestFiles) {
-        $TestFilePath = $TestFile + ".test.exe"
+        $TestFilePath = ".\" + $TestFile + ".test.exe"
         $Command = @($TestFilePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
         if ($TestFilePath -ne "controller") {
             $Command += ("--netAdapter=" + $TestConfiguration.AdapterName)
