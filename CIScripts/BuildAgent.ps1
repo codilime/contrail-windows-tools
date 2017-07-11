@@ -28,4 +28,4 @@ Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\common\*" third_party/
 Copy-Item tools/build/SConstruct ./
 
 Write-Host "Building Agent, MSI and API"
-scons -Q contrail-vrouter-agent contrail-vrouter-agent.msi controller/src/vnsw/contrail_vrouter_api:sdist
+scons contrail-vrouter-agent contrail-vrouter-agent.msi controller/src/vnsw/contrail_vrouter_api:sdist
