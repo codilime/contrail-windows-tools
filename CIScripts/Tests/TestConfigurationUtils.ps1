@@ -84,7 +84,7 @@ function Enable-DockerDriver {
         } | Out-Null
     }
 
-    Start-Sleep -s 30
+    Start-Sleep -s 60
 }
 
 function Disable-DockerDriver {
