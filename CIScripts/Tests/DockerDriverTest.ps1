@@ -11,7 +11,7 @@ function Test-DockerDriver {
     foreach ($TestFile in $TestFiles) {
         $TestFilePath = ".\" + $TestFile + ".test.exe"
         $Command = @($TestFilePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
-        if ($TestFilePath -ne "controller") {
+        if ($TestFile -ne "controller") {
             $Command += ("--netAdapter=" + $TestConfiguration.AdapterName)
         }
         $Command = $Command -join " "
@@ -19,8 +19,12 @@ function Test-DockerDriver {
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             Push-Location $Using:TestsPath
 
-            Invoke-Expression -Command $Using:Command -ErrorAction Continue | Write-Host
-            $Res = $LASTEXITCODE
+            # Invoke-Command used as a workaround for temporary ErrorActionPreference modiffication
+            $Res = Invoke-Command -ScriptBlock {
+                $ErrorActionPreference = "SilentlyContinue"
+                Invoke-Expression -Command $Using:Command | Write-Host
+                return $LASTEXITCODE
+            }
 
             Pop-Location
 
@@ -34,7 +38,7 @@ function Test-DockerDriver {
     }
 
     $TestFiles.ForEach({
-        Copy-Item -FromSession $Session -Path ($TestsPath + $_ + "_junit.xml")
+        Copy-Item -FromSession $Session -Path ($TestsPath + $_ + "_junit.xml") -ErrorAction SilentlyContinue
     })
 
     if ($TestFailed -eq $true) {
