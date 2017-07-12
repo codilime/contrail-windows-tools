@@ -47,7 +47,7 @@ function Disable-VRouterExtension {
     }
 }
 
-function Test-VRouterExtensionEnabled {
+function Test-IfVRouterExtensionEnabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
@@ -108,7 +108,7 @@ function Disable-DockerDriver {
     }
 }
 
-function Test-DockerDriverEnabled {
+function Test-IfDockerDriverEnabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
     $Proc = Invoke-Command -Session $Session -ScriptBlock {
@@ -152,12 +152,12 @@ function Initialize-TestConfiguration {
     # DockerDriver automatically enables Extension, so there is no need to enable it manually
     Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -Configuration $TestConfiguration.DockerDriverConfiguration
 
-    $Res = Test-VRouterExtensionEnabled -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
+    $Res = Test-IfVRouterExtensionEnabled -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
     if ($Res -ne $true) {
         throw "Extension was not enabled or is not running."
     }
 
-    $Res = Test-DockerDriverEnabled -Session $Session
+    $Res = Test-IfDockerDriverEnabled -Session $Session
     if ($Res -ne $true) {
         throw "Docker driver was not enabled."
     }
