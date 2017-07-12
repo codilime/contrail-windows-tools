@@ -19,7 +19,7 @@ function Test-DockerDriver {
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             Push-Location $Using:TestsPath
 
-            Invoke-Expression -Command $Using:Command -WarningAction Continue | Write-Host
+            Invoke-Expression -Command $Using:Command -ErrorAction Continue | Write-Host
             $Res = $LASTEXITCODE
 
             Pop-Location
