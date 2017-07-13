@@ -6,6 +6,12 @@ function Test-DockerDriver {
 
     $TestFailed = $false
     $TestsPath = "C:\Program Files\Juniper Networks\"
+    $AdapterName = $TestConfiguration.AdapterName
+
+    # Some of tests requires static IP address
+    Invoke-Command -Session $Session -ScriptBlock {
+        netsh interface ipv4 set address name=$Using:AdapterName static 10.100.10.0 255.255.0.0 10.100.10.1
+    }
 
     $TestFiles = @("controller", "hns", "hnsManager", "driver")
     foreach ($TestFile in $TestFiles) {
@@ -37,6 +43,12 @@ function Test-DockerDriver {
         }
     }
 
+    # Reverting address to DHCP
+    Invoke-Command -Session $Session -ScriptBlock {
+        netsh interface ipv4 set address name=$Using:AdapterName dhcp
+    }
+
+    # Copying test results
     $TestFiles.ForEach({
         Copy-Item -FromSession $Session -Path ($TestsPath + $_ + "_junit.xml") -ErrorAction SilentlyContinue
     })
