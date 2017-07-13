@@ -25,7 +25,7 @@ function Test-DockerDriver {
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             Push-Location $Using:TestsPath
 
-            # Invoke-Command used as a workaround for temporary ErrorActionPreference modiffication
+            # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
             $Res = Invoke-Command -ScriptBlock {
                 $ErrorActionPreference = "SilentlyContinue"
                 Invoke-Expression -Command $Using:Command | Write-Host
