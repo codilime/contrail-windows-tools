@@ -7,10 +7,7 @@ function Test-MultiEnableDisableExtension {
 
     foreach ($I in 1..$EnableDisableCount) {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Start-Sleep -s 1
-
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Start-Sleep -s 1
     }
 
     Write-Host "Success!"
