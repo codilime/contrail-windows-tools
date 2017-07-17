@@ -28,11 +28,25 @@ Copy-Item tools\build\SConstruct .\
 Write-Host "Building Extension and Utils"
 $cerp = Get-Content $Env:CERT_PASSWORD_FILE_PATH
 devenv.com /Build "Debug|x64" vrouter\vRouter.sln
+if ($LASTEXITCODE -ne 0) {
+    throw "Building vRouter solution failed"
+}
+
 scons vrouter/utils
+if ($LASTEXITCODE -ne 0) {
+    throw "Building utils failed"
+}
 
 $vRouterMSI = "vrouter\windows\installer\vrouterMSI\Debug\vRouter.msi"
 $utilsMSI = "build\debug\vrouter\utils\utils.msi"
 
 Write-Host "Signing MSIs"
 & "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $utilsMSI
+if ($LASTEXITCODE -ne 0) {
+    throw "Signing utilsMSI failed"
+}
+
 & "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $vRouterMSI
+if ($LASTEXITCODE -ne 0) {
+    throw "Signing vRouterMSI failed"
+}
