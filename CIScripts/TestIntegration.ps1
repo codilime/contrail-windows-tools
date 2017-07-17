@@ -49,14 +49,14 @@ $TestConfiguration = [TestConfiguration] @{
 }
 
 # TODO: JW-838: Add parameters after tests implementation
-Test-ExtensionLongLeak
+Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
 Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
-Test-VTestScenarios
+Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-TCPCommunication
 Test-ICMPOverMPLSOverGRE
 Test-TCPOverMPLSOverGRE
 Test-SNAT
-Test-DockerDriver
+Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
 Write-Host "Removing VMs..."
 Remove-TestbedVMs -VMNames $VMNames -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
