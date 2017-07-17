@@ -25,10 +25,11 @@ Copy-Item -Recurse third_party\cmocka vrouter\test\
 Write-Host "Building Extension and Utils"
 $cerp = Get-Content $Env:CERT_PASSWORD_FILE_PATH
 devenv.com /Build "Debug|x64" vrouter\vRouter.sln
+scons vrouter/utils
 
 $vRouterMSI = "vrouter\windows\installer\vrouterMSI\Debug\vRouter.msi"
-$utilMSI = "vrouter\windows\installer\utilsMSI\Debug\utilsMSI.msi"
+$utilsMSI = "build\debug\vrouter\utils\utils.msi"
 
 Write-Host "Signing MSIs"
-& "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $utilMSI
+& "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $utilsMSI
 & "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $vRouterMSI
