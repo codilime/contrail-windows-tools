@@ -135,13 +135,14 @@ function Test-IsDockerDriverEnabled {
 }
 
 function Enable-VRouterAgent {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+           [Parameter(Mandatory = $true)] [string] $ConfigFilePath)
 
     Write-Host "Enabling Agent"
 
     Invoke-Command -Session $Session -ScriptBlock {
         Start-Job -ScriptBlock {
-            & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe"
+            & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $Using:ConfigFilePath
         } | Out-Null
     }
 }
