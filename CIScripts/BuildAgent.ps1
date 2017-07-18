@@ -49,7 +49,7 @@ $Repos.ForEach({
     git clone -b $CustomMultiBranch $_.Url $_.Dir
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host $("Cloning " +  $_.Url + "; branch: " + $_.Branch)
+        Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
         git clone -b $_.Branch $_.Url $_.Dir
 
         if ($LASTEXITCODE -ne 0) {
