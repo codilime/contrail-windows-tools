@@ -52,7 +52,7 @@ $TestConfiguration = [TestConfiguration] @{
 Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
 Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:MULTI_ENABLE_DISABLE_EXTENSION_COUNT -TestConfiguration $TestConfiguration
 Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
-Test-TCPCommunication
+Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-ICMPOverMPLSOverGRE
 Test-TCPOverMPLSOverGRE
 Test-SNAT
