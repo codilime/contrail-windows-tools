@@ -17,6 +17,7 @@ git clone -b $Env:VROUTER_BRANCH $Env:VROUTER_REPO_URL vrouter/
 git clone -b $Env:SANDESH_BRANCH $Env:SANDESH_REPO_URL tools/sandesh/
 git clone -b $Env:TOOLS_BRANCH $Env:TOOLS_REPO_URL tools/build/
 git clone -b $Env:CONTROLLER_BRANCH $Env:CONTROLLER_REPO_URL controller/
+git clone -b $Env:WINDOWSSTUBS_BRANCH $Env:WINDOWSSTUBS_REPO_URL windows/
 
 Write-Host "Copying third-party dependencies"
 New-Item -ItemType Directory .\third_party
