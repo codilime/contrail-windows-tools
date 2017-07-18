@@ -16,44 +16,37 @@ Write-Host "Cloning repositories"
 class Repo {
     [string] $Url;
     [string] $Branch;
+    [string] $DefaultBranch;
     [string] $Dir;
 
-    Repo ([string] $Url, [string] $Branch, [string] $Dir) {
+    Repo ([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch = "windows") {
         $this.Url = $Url
         $this.Branch = $Branch
         $this.Dir = $Dir
+        $this.DefaultBranch = $DefaultBranch
     }
 }
 
-$DefaultBranch = "windows"
 $Repos = @(
     [Repo]::new($Env:TOOLS_REPO_URL, $Env:TOOLS_BRANCH, "tools/build/"),
-    [Repo]::new($Env:SANDESH_BRANCH, $Env:SANDESH_REPO_URL, "tools/sandesh/"),
-    [Repo]::new($Env:GENERATEDS_BRANCH, $Env:GENERATEDS_REPO_URL, "tools/generateDS/"),
-    [Repo]::new($Env:VROUTER_BRANCH, $Env:VROUTER_REPO_URL, "vrouter/"),
-    [Repo]::new($Env:WINDOWSSTUBS_BRANCH, $Env:WINDOWSSTUBS_REPO_URL, "windows/")
+    [Repo]::new($Env:SANDESH_REPO_URL, $Env:SANDESH_BRANCH, "tools/sandesh/"),
+    [Repo]::new($Env:GENERATEDS_REPO_URL, $Env:GENERATEDS_BRANCH, "tools/generateDS/"),
+    [Repo]::new($Env:VROUTER_REPO_URL, $Env:VROUTER_BRANCH, "vrouter/", "windows"),
+    [Repo]::new($Env:WINDOWSSTUBS_REPO_URL, $Env:WINDOWSSTUBS_BRANCH, "windows/"),
+    [Repo]::new( $Env:CONTROLLER_REPO_URL, $Env:CONTROLLER_BRANCH, "controller/", "windows3.1")
 )
 
-git clone -b $Env:CONTROLLER_BRANCH $Env:CONTROLLER_REPO_URL controller/
-if ($LASTEXITCODE -ne 0) {
-    throw "Cloning from " + $Env:CONTROLLER_REPO_URL + " failed"
+$CustomBranches = $Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -Property Branch
+if ($CustomBranches.Count -gt 1) {
+    throw "Custom branches defined for multiple repos"
 }
 
 $Repos.ForEach({
-    # If there is custom branch specified, try to clone this branch only
-    if ($_.Branch -ne $DefaultBranch) {
-        git clone -b $_.Branch $_.Url $_.Dir
-        if ($LASTEXITCODE -ne 0) {
-            throw "Cloning from " + $_.Url + " failed"
-        }
-
-        continue
-    }
-
-    # Try to clone from controller branch, then from default
-    git clone -b $Env:CONTROLLER_BRANCH $_.Url $_.Dir
+    # If there is custom branch provided, at first try to use it for all repos. Otherwise, use branch specific for this repo.
+    $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { return $CustomBranches[0] } else { return $_.Branch })
+    git clone -b $CustomMultiBranch $_.Url $_.Dir
     if ($LASTEXITCODE -ne 0) {
-        git clone -b $DefaultBranch $_.Url $_.Dir
+        git clone -b $_.Branch $_.Url $_.Dir
         if ($LASTEXITCODE -ne 0) {
             throw "Cloning from " + $_.Url + " failed"
         }
