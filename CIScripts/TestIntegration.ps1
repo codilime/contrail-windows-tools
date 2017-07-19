@@ -54,7 +54,7 @@ Test-MultiEnableDisableExtension -Session $Sessions[0] -EnableDisableCount $Env:
 Test-VTestScenarios -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-TCPCommunication
 Test-ICMPOverMPLSOverGRE
-Test-TCPOverMPLSOverGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
+Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-SNAT
 Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
 

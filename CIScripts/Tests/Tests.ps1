@@ -6,5 +6,5 @@
 . $PSScriptRoot\VTestScenariosTest.ps1
 . $PSScriptRoot\TCPCommunicationTest.ps1
 . $PSScriptRoot\ICMPOverMPLSOverGRETest.ps1
-. $PSScriptRoot\TCPOverMPLSOverGRETest.ps1
+. $PSScriptRoot\TCPoMPLSoGRETest.ps1
 . $PSScriptRoot\SNATTest.ps1

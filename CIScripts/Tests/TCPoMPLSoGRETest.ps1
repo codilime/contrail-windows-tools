@@ -1,4 +1,4 @@
-function Test-TCPOverMPLSOverGRE {
+function Test-TCPoMPLSoGRE {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
@@ -15,7 +15,7 @@ function Test-TCPOverMPLSOverGRE {
 
     . $PSScriptRoot\CommonTestCode.ps1
 
-    $ServerIP, $ClientIP = Initialize-MPLSOverGRE -Session1 $Session1 -Session2 $Session2 `
+    $ServerIP, $ClientIP = Initialize-MPLSoGRE -Session1 $Session1 -Session2 $Session2 `
         -Container1ID $ServerID -Container2ID $ClientID -AdapterName $TestConfiguration.AdapterName
 
     Write-Host "Invoking web request"
