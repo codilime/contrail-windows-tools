@@ -54,7 +54,7 @@ function Get-RemoteContainerNetAdapterInformation {
     return [ContainerNetAdapterInformation] $NetAdapterInformation
 }
 
-function Initialize-MPLSOverGRE {
+function Initialize-MPLSoGRE {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [string] $Container1ID,
@@ -96,13 +96,18 @@ function Initialize-MPLSOverGRE {
     $Container1NetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session1 -ContainerID $Container1ID
     $Container2NetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session2 -ContainerID $Container2ID
 
+    Write-Host "Initializing vRouter structures"
+    # IPs of logical routers. They do not have to be IPs of the VMs.
+    $VM1LogicalRouterIPAddress = "192.168.3.101"
+    $VM2LogicalRouterIPAddress = "192.168.3.102"
+
     Initialize-VRouterStructures -Session $Session1 -ThisVMNetInfo $VM1NetInfo -OtherVMNetInfo $VM2NetInfo `
         -ThisContainerNetInfo $Container1NetInfo -OtherContainerNetInfo $Container2NetInfo `
-        -ThisIPAddress 192.168.3.101 -OtherIPAddress 192.168.3.102
+        -ThisIPAddress $VM1LogicalRouterIPAddress -OtherIPAddress $VM2LogicalRouterIPAddress
 
     Initialize-VRouterStructures -Session $Session2 -ThisVMNetInfo $VM2NetInfo -OtherVMNetInfo $VM1NetInfo `
         -ThisContainerNetInfo $Container2NetInfo -OtherContainerNetInfo $Container1NetInfo `
-        -ThisIPAddress 192.168.3.102 -OtherIPAddress 192.168.3.101
+        -ThisIPAddress $VM2LogicalRouterIPAddress -OtherIPAddress $VM1LogicalRouterIPAddress
 
     Write-Host "Executing netsh"
     Invoke-Command -Session $Session1 -ScriptBlock {
