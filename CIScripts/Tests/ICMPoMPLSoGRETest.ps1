@@ -1,4 +1,4 @@
-function Test-ICMPOverMPLSOverGRE {
+function Test-ICMPoMPLSoGRE {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session1,
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
@@ -15,7 +15,7 @@ function Test-ICMPOverMPLSOverGRE {
 
     . $PSScriptRoot\CommonTestCode.ps1
 
-    $Container1IP, $Container2IP = Initialize-MPLSOverGRE -Session1 $Session1 -Session2 $Session2 `
+    $Container1IP, $Container2IP = Initialize-MPLSoGRE -Session1 $Session1 -Session2 $Session2 `
         -Container1ID $Container1ID -Container2ID $Container2ID -AdapterName $TestConfiguration.AdapterName
 
     Write-Host "Testing ping"
