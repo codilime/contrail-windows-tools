@@ -3,7 +3,7 @@ function Test-TCPoMPLSoGRE {
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    Write-Host "Running TCP Over MPLS Over GRE test"
+    Write-Host "Running TCP over MPLS over GRE test"
 
     Initialize-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
     Initialize-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
