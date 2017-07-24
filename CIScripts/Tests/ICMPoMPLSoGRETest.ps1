@@ -3,7 +3,7 @@ function Test-ICMPoMPLSoGRE {
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    Write-Host "Running ICMP Over MPLS Over GRE test"
+    Write-Host "Running ICMP over MPLS over GRE test"
 
     Initialize-TestConfiguration -Session $Session1 -TestConfiguration $TestConfiguration
     Initialize-TestConfiguration -Session $Session2 -TestConfiguration $TestConfiguration
