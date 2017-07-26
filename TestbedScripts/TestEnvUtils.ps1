@@ -59,11 +59,13 @@ function Get-FriendlyNameOfContainer {
     $Name = docker exec $ContainerName powershell -Command {
         (Get-NetAdapter | Select-Object -First 1).Name
     }
+    Write-Host "$Name"
     if ($Name -match "\S+\s\((?<FriendlyName>[\S\s]+)\)") {
-        Write-Host $matches.FriendlyName
-        return $matches.FriendlyName
+        $FriendlyName = $matches.FriendlyName
+        Write-Host "    Friendly name of the interface is: $FriendlyName"
+        return $FriendlyName
     } else {
-        Write-Host "Failed."
+        Write-Host "    Could not fetch friendly name of the interface."
         return ""
     }
 }
