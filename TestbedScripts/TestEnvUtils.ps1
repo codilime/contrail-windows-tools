@@ -45,20 +45,27 @@ function Initialize-DockerNetwork {
 
 function Get-MacOfContainer {
     Param ([Parameter(Mandatory = $true)] [string] $ContainerName)
+    Write-Host -NoNewline "Reading MAC address of '$ContainerName'... "
     $Mac = docker exec $ContainerName powershell -Command {
         (Get-NetAdapter | Select-Object -First 1).MacAddress
     }
+    Write-Host $Mac
     return $Mac
 }
 
 function Get-FriendlyNameOfContainer {
     Param ([Parameter(Mandatory = $true)] [string] $ContainerName)
+    Write-Host -NoNewline "Reading interface name of '$ContainerName'... "
     $Name = docker exec $ContainerName powershell -Command {
         (Get-NetAdapter | Select-Object -First 1).Name
     }
-    $Name -match "\S+\s\((?<FriendlyName>[\S\s]+)\)" | Out-Null
-    $FriendlyName = $matches.FriendlyName
-    return $FriendlyName
+    if ($Name -match "\S+\s\((?<FriendlyName>[\S\s]+)\)") {
+        Write-Host $matches.FriendlyName
+        return $matches.FriendlyName
+    } else {
+        Write-Host "Failed."
+        return ""
+    }
 }
 
 function Initialize-ContainerInterface {
@@ -84,7 +91,7 @@ function Initialize-ContainerInterfaces {
     Param ([Parameter(Mandatory = $true)] [string] $Mac1,
            [Parameter(Mandatory = $true)] [string] $Mac2)
     Write-Host "Initializing network interfaces for containers... "
-    Write-Host -NoNewline "Setting up network interface for '$Env:Container1Name'..."
+    Write-Host -NoNewline "Setting up network interface for '$Env:Container1Name'... "
     $Res = Initialize-ContainerInterface -ContainerName $Env:Container1Name `
         -ContainerIP $Env:Container1IP -PrefixLength $Env:ContainerIPPrefixLength `
         -TheOtherMac $Mac2 -TheOtherIP $Env:Container2IP
@@ -93,7 +100,7 @@ function Initialize-ContainerInterfaces {
     } else {
         Write-Host "Failed."
     }
-    Write-Host -NoNewline "Setting up network interface for '$Env:Container2Name'..."
+    Write-Host -NoNewline "Setting up network interface for '$Env:Container2Name'... "
     $Res = Initialize-ContainerInterface -ContainerName $Env:Container2Name `
         -ContainerIP $Env:Container2IP -PrefixLength $Env:ContainerIPPrefixLength `
         -TheOtherMac $Mac1 -TheOtherIP $Env:Container1IP
@@ -201,26 +208,26 @@ function Initialize-ForwardingRules {
            [Parameter(Mandatory = $true)] [string] $Container1IfName,
            [Parameter(Mandatory = $true)] [string] $Container2IfName)
     Write-Host "Initializing forwarding rules..."
-    $MacPhysicalUnix = $MacPhysical -Replace "-", ":"
-    $MacHNSTransparentUnix = $MacHNSTransparent -Replace "-", ":"
-    $Mac1Unix = $Mac1 -Replace "-", ":"
-    $Mac2Unix = $Mac2 -Replace "-", ":"
+    $MacPhysicalUnixFormat = $MacPhysical -Replace "-", ":"
+    $MacHNSTransparentUnixFormat = $MacHNSTransparent -Replace "-", ":"
+    $Mac1UnixFormat = $Mac1 -Replace "-", ":"
+    $Mac2UnixFormat = $Mac2 -Replace "-", ":"
 
     Write-Host -NoNewline "Setting up vifs... "
     $VifsSetUp = $true
-    vif --add (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").IfName --mac $MacPhysicalUnix --vrf 0 --type physical
+    vif --add (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").IfName --mac $MacPhysicalUnixFormat --vrf 0 --type physical
     if ($LASTEXITCODE -ne 0) {
         $VifsSetUp = $false
     }
-    vif --add HNSTransparent --mac $MacHNSTransparentUnix --vrf 0 --type vhost --xconnect (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").IfName
+    vif --add HNSTransparent --mac $MacHNSTransparentUnixFormat --vrf 0 --type vhost --xconnect (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").IfName
     if ($LASTEXITCODE -ne 0) {
         $VifsSetUp = $false
     }
-    vif --add $Container1IfName --mac $Mac1Unix --vrf 1 --type virtual --vif 1111
+    vif --add $Container1IfName --mac $Mac1UnixFormat --vrf 1 --type virtual --vif 1111
     if ($LASTEXITCODE -ne 0) {
         $VifsSetUp = $false
     }
-    vif --add $Container2IfName --mac $Mac2Unix --vrf 1 --type virtual --vif 2222
+    vif --add $Container2IfName --mac $Mac2UnixFormat --vrf 1 --type virtual --vif 2222
     if ($LASTEXITCODE -ne 0) {
         $VifsSetUp = $false
     }
@@ -248,11 +255,11 @@ function Initialize-ForwardingRules {
 
     Write-Host -NoNewline "Setting up routes..."
     $RTsSetUp = $true
-    rt -c -v 1 -f 1 -e $Mac1Unix -n 1
+    rt -c -v 1 -f 1 -e $Mac1UnixFormat -n 1
     if ($LASTEXITCODE -ne 0) {
         $RTsSetUp = $false
     }
-    rt -c -v 1 -f 1 -e $Mac2Unix -n 2
+    rt -c -v 1 -f 1 -e $Mac2UnixFormat -n 2
     if ($LASTEXITCODE -ne 0) {
         $RTsSetUp = $false
     }
@@ -295,27 +302,14 @@ function Initialize-SimpleEnvironment {
     Initialize-Container -ContainerName $Env:Container2Name -NetworkName `
         $Env:DockerNetworkName -IPAddress $Env:Container2IP
 
-    Write-Host -NoNewline "Reading MAC address of '$Env:Container1Name'... "
     $Mac1 = Get-MacOfContainer -ContainerName $Env:Container1Name
-    Write-Host $Mac1
-    Write-Host -NoNewline "Reading MAC address of '$Env:Container2Name'... "
     $Mac2 = Get-MacOfContainer -ContainerName $Env:Container2Name
-    Write-Host $Mac2
-
-    Write-Host -NoNewline "Reading interface name of '$Env:Container1Name'... "
     $Container1IfName = Get-FriendlyNameOfContainer -ContainerName $Env:Container1Name
-    Write-Host $Container1IfName
-    Write-Host -NoNewline "Reading interface name of '$Env:Container2Name'... "
     $Container2IfName = Get-FriendlyNameOfContainer -ContainerName $Env:Container2Name
-    Write-Host $Container2IfName
 
     Initialize-ContainerInterfaces -Mac1 $Mac1 -Mac2 $Mac2
-    Write-Host -NoNewline "Reading MAC address of '$Env:VRouterPhysicalIfName'... "
     $MacPhysical = (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").MacAddress
-    Write-Host $MacPhysical
-    Write-Host -NoNewline "Reading MAC address of 'HNSTransparent'... "
     $MacHNSTransparent = (Get-NetAdapter -Name "vEthernet (HNSTransparent)").MacAddress
-    Write-Host $MacHNSTransparent
 
     Write-Host -NoNewline "Checking if vRouter Extension is enabled... "
     $Res = Test-IsVRouterExtensionEnabled -VMSwitchName $Env:VMSwitchName `
@@ -333,10 +327,9 @@ function Initialize-SimpleEnvironment {
 
 # Removes test environment created by Initialize-SimpleEnvironment.
 # Relies on environment variables (indirectly) - see
-# Remove-DockerNetworkAccordingToEnv, Disable-VRouterExtension.
+# Stop-Agent, Remove-DockerNetworkAccordingToEnv.
 function Remove-SimpleEnvironment {
     Write-Host "Removing simple test environment..."
-    Remove-DockerNetworkAccordingToEnv
     Stop-Agent
-    Disable-VRouterExtension
+    Remove-DockerNetworkAccordingToEnv
 }
