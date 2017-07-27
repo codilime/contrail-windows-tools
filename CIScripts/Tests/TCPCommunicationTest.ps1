@@ -24,7 +24,7 @@ function Test-TCPCommunication {
     $ServerNetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session -ContainerID $ServerID
     $ClientNetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session -ContainerID $ClientID
 
-    Write-Host "Configuring..."
+    Write-Host $("Setting a connection between " + $ServerNetInfo.MACAddress + " and " + $ClientNetInfo.MACAddress + "...")
     Invoke-Command -Session $Session -ScriptBlock {
         vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
         vif.exe --add HNSTransparent --mac $Using:VMNetInfo.MACAddress --vrf 0 --type vhost --xconnect $Using:VMNetInfo.IfName
