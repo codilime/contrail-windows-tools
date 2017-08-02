@@ -37,12 +37,9 @@ $Repos = @(
 )
 
 $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
-if ($CustomBranches.Count -gt 1) {
-    throw "Different custom branches defined for multiple repos"
-}
-
 $Repos.ForEach({
-    # If there is custom branch provided, at first try to use it for all repos. Otherwise, use branch specific for this repo.
+    # If there is only one unique custom branch provided, at first try to use it for all repos.
+    # Otherwise, use branch specific for this repo.
     $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
 
     Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
