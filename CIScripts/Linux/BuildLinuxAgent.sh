@@ -1,9 +1,17 @@
+# This script
+# - generates repo tool manifest that uses branches specified in parameters
+# - launches a Linux Virtualbox VM using Vagrant
+# - injects the manifest file
+# - builds vRouter Agent
 # parameters:
 # TOOLS_BRANCH CONTROLLER_BRANCH VROUTER_BRANCH GENERATEDS_BRANCH SANDESH_BRANCH
 
 # we need to somehow inject branches from upstream jenkins job into repo tool
-# manifest.
+# manifest, however repo uses static xml files only...
 # padre forgive me for this hack...
+
+git clone https://github.com/codilime/contrail-vnc -b windows
+
 echo "
 <manifest>
 <remote name=\"github\" fetch=\"..\"/>
@@ -21,7 +29,22 @@ echo "
 <project name=\"contrail-third-party\" remote=\"github\" path=\"third_party\"/>
 
 </manifest>
-" > multibranch_manifest.xml
+" > contrail-vnc/default.xml
+
+echo "
+<manifest>
+<remote name="github" fetch=".."/>
+
+<default revision="refs/heads/windows" remote="github"/>
+
+<project name=\"contrail-build\" revision=\"$1\" remote=\"github\" path=\"tools/build\">
+  <copyfile src="SConstruct" dest="SConstruct"/>
+</project>
+<project name=\"contrail-vrouter\" revision=\"$3\" remote=\"github\" path=\"vrouter\"/>
+<project name=\"contrail-sandesh\" revision=\"$5\" remote=\"github\" path=\"tools/sandesh\"/>
+
+</manifest>
+" > contrail-vnc/multibranch_manifest.xml
 
 vagrant halt
 vagrant destroy -f

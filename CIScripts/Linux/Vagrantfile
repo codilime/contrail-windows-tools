@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "~/.ssh/other_keys/vms_key", destination: ".ssh/id_rsa"
   config.vm.provision "file", source: "~/.ssh/other_keys/vms_key.pub", destination: ".ssh/id_rsa.pub"
   config.vm.provision "file", source: "~/.gitconfig", destination: ".gitconfig"
-  config.vm.provision "file", source: "multibranch_manifest.xml", destination: ".repo/manifests/multibranch_manifest.xml"
+  config.vm.provision "file", source: "contrail-vnc", destination: ".repo/manifests"
 
   config.vm.provision "shell", inline: <<-SHELL
     apt-add-repository ppa:opencontrail/ppa
