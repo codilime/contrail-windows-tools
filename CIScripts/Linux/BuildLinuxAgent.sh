@@ -1,5 +1,3 @@
-git clone https://github.com/michal-clapinski/vrouter-vagrant
-cd vrouter-vagrant
 vagrant halt
 vagrant destroy -f
 vagrant up
