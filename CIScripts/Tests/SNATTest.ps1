@@ -370,7 +370,7 @@ function Test-SNAT {
         -Name $SNATVethName `
         -IPAddress $SNATConfiguration.VethIP
 
-    # TODO: Remove `ForwardingMAC` when Agent is functional
+    # TODO: JW-976: Remove `ForwardingMAC` when Agent is functional
     New-SNATVM -Session $Session `
         -VmDirectory $SNATConfiguration.VMDir -DiskPath $SNATDiskPath `
         -MgmtSwitchName $SNATMgmtSwitchName `
@@ -387,6 +387,7 @@ function Test-SNAT {
     $SNATRight = Get-RemoteVMNetAdapterInformation -Session $Session -VMName $SNATVMName -AdapterName $SNATRightName
     Write-Host "Extracting adapters data... DONE"
 
+    # TODO: JW-976: Remove `Set-GWVethForwarding` and `Set-HNSTransparentForwarding` when Agent is functional?
     Set-RoutingRules -Session $Session -GatewayIP $SNATConfiguration.GatewayIP -VethIP $SNATConfiguration.VethIP -SNATVethIfIndex $SNATVeth.IfIndex
     Set-GWVethForwarding -Session $Session -SNATVethIfIndex $SNATVeth.IfIndex -GatewayIP $SNATConfiguration.GatewayIP -SNATRightMacAddressWindows $SNATRight.MacAddressWindows
     Set-HNSTransparentForwarding -Session $Session -HNSAdapterIfIndex $HNSAdapter.IfIndex
