@@ -55,6 +55,9 @@ $SNATConfiguration = [SNATConfiguration] @{
     ContainerGatewayIP = $Env:SNAT_CONTAINER_GATEWAY_IP;
     EndhostUsername = $Env:SNAT_ENDHOST_USERNAME;
     EndhostPassword = $Env:SNAT_ENDHOST_PASSWORD;
+    DiskDir = $Env:SNAT_DISK_DIR;
+    DiskFileName = $Env:SNAT_DISK_FILE_NAME;
+    VMDir = $Env:SNAT_VM_DIR;
 }
 
 Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration

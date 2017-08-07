@@ -5,6 +5,9 @@ class SNATConfiguration {
     [string] $ContainerGatewayIP;
     [string] $EndhostUsername;
     [string] $EndhostPassword;
+    [string] $DiskDir;
+    [string] $DiskFileName;
+    [string] $VMDir;
 }
 
 function Test-SNAT {
@@ -68,9 +71,6 @@ function Test-SNAT {
                 IfIndex = $NetAdapter.ifIndex;
             }
         }
-
-        $SNATVeth.Set_Item("vif", 104)
-        $SNATVeth.Set_Item("nh", 104)
 
         Write-Host "Setting up veth for forwarding... DONE"
 
@@ -152,6 +152,152 @@ function Test-SNAT {
         Write-Host "Run vrouter_hyperv.py to remove SNAT VM... DONE"
     }
 
+    function Set-EndhostConfiguration {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [string] $PhysicalMac,
+               [Parameter(Mandatory = $true)] [string] $EndhostIP,
+               [Parameter(Mandatory = $true)] [string] $GatewayIP,
+               [Parameter(Mandatory = $true)] [string] $EndhostUsername,
+               [Parameter(Mandatory = $true)] [string] $EndhostPassword)
+
+        Write-Host "Configure endhost..."
+
+        $EndhostSecurePassword = ConvertTo-SecureString $EndhostPassword -AsPlainText -Force
+        $EndhostCredentials = New-Object System.Management.Automation.PSCredential($EndhostUsername, $EndhostSecurePassword)
+        Invoke-Command -Session $Session -ScriptBlock {
+            $EndhostSession = New-SSHSession -IPAddress $Using:EndhostIP -Credential $Using:EndhostCredentials -AcceptKey
+            Invoke-SSHCommand -SessionId $EndhostSession.SessionId `
+                -Command "echo $Using:EndhostPassword | sudo -S arp -i eth0 -s $Using:GatewayIP $Using:PhysicalMac" | Out-Null
+        }
+
+        Write-Host "Configure endhost... DONE"
+    }
+
+    function Set-VRouterConfiguration {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [NetAdapterInformation] $PhysicalAdapter,
+               [Parameter(Mandatory = $true)] [ContainerNetAdapterInformation] $ContainerAdapter,
+               [Parameter(Mandatory = $true)] [string] $SNATLeftName,
+               [Parameter(Mandatory = $true)] [NetAdapterMacAddresses] $SNATLeft,
+               [Parameter(Mandatory = $true)] [string] $SNATRightName,
+               [Parameter(Mandatory = $true)] [NetAdapterMacAddresses] $SNATRight,
+               [Parameter(Mandatory = $true)] $SNATVeth)
+
+        Write-Host "Configure vRouter..."
+
+        $InternalVrf = 1
+        $ExternalVrf = 2
+
+        $ContainerVif = 101
+        $ContainerNh = 101
+
+        $SNATLeftVif = 102
+        $SNATLeftNh = 102
+
+        $SNATRightVif = 103
+        $SNATRightNh = 103
+
+        $SNATVethVif = 104
+        $SNATVethNh = 104
+
+        $BroadcastInternalNh = 110
+        $BroadcastExternalNh = 111
+
+        Invoke-Command -Session $Session -ScriptBlock {
+            # Register physical adapter in Contrail
+            vif --add $Using:PhysicalAdapter.IfName --mac $Using:PhysicalAdapter.MacAddress --vrf 0 --type physical
+            vif --add HNSTransparent --mac $Using:PhysicalAdapter.MacAddress --vrf 0 --type vhost --xconnect $Using:PhysicalAdapter.IfName
+
+            # Register container's NIC as vif
+            vif --add $Using:ContainerAdapter.AdapterShortName --mac $Using:ContainerAdapter.MacAddress --vrf $Using:InternalVrf --type virtual --vif $Using:ContainerVif
+            nh --create $Using:ContainerNh --vrf $Using:InternalVrf --type 2 --el2 --oif $Using:ContainerVif
+            rt -c -v $Using:InternalVrf -f 1 -e $Using:ContainerAdapter.MacAddress -n $Using:ContainerNh
+
+            # Register SNAT's left adapter ("int")
+            vif --add $Using:SNATLeftName --mac $Using:SNATLeft.MacAddress --vrf $Using:InternalVrf --type virtual --vif $Using:SNATLeftVif
+            nh --create $Using:SNATLeftNh --vrf $Using:InternalVrf --type 2 --el2 --oif $Using:SNATLeftVif
+            rt -c -v $Using:InternalVrf -f 1 -e $Using:SNATLeft.MacAddress -n $Using:SNATLeftNh
+
+            # Register SNAT's right adapter ("gw")
+            vif --add $Using:SNATRightName --mac $Using:SNATRight.MacAddress --vrf $Using:ExternalVrf --type virtual --vif $Using:SNATRightVif
+            nh --create $Using:SNATRightNh --vrf $Using:ExternalVrf --type 2 --el2 --oif $Using:SNATRightVif
+            rt -c -v $Using:ExternalVrf -f 1 -e $Using:SNATRight.MacAddress -n $Using:SNATRightNh
+
+            # Register SNAT's additional adapter ("veth")
+            vif --add $Using:SNATVeth.Name --mac $Using:SNATVeth.MacAddress --vrf $Using:ExternalVrf --type virtual --vif $Using:SNATVethVif
+            nh --create $Using:SNATVethNh --vrf $Using:ExternalVrf --type 2 --el2 --oif $Using:SNATVethVif
+            rt -c -v $Using:ExternalVrf -f 1 -e $Using:SNATVeth.MacAddress -n $Using:SNATVethNh
+
+            # Broadcast NH (internal network)
+            nh --create $Using:BroadcastInternalNh --vrf $Using:InternalVrf --type 6 --cen --cni $Using:ContainerNH --cni $Using:SNATLeftNh
+            rt -c -v $Using:InternalVrf -f 1 -e ff:ff:ff:ff:ff:ff -n $Using:BroadcastInternalNh
+
+            # Broadcast NH (external network)
+            nh --create $Using:BroadcastExternalNh --vrf $Using:ExternalVrf --type 6 --cen --cni $Using:SNATRightNh --cni $Using:SNATVethNh
+            rt -c -v $Using:ExternalVrf -f 1 -e ff:ff:ff:ff:ff:ff -n $Using:BroadcastExternalNh
+        }
+
+        Write-Host "Configure vRouter... DONE"
+    }
+
+    function Set-RoutingRules {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [string] $GatewayIP,
+               [Parameter(Mandatory = $true)] [string] $VethIP,
+               [Parameter(Mandatory = $true)] [int] $SNATVethIfIndex)
+
+        Write-Host "Setting up routing rules..."
+
+        $Res = Invoke-Command -Session $Session -ScriptBlock {
+            route add $Using:GatewayIP mask 255.255.255.255 $Using:VethIP "if" $Using:SNATVethIfIndex | Out-Null
+            $LASTEXITCODE
+        }
+
+        if ($Res -ne 0) {
+            throw "Setting up routing rules... FAILED"
+        }
+
+        Write-Host "Setting up routing rules... DONE"
+    }
+
+    function Set-GWVethForwarding {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [int] $SNATVethIfIndex,
+               [Parameter(Mandatory = $true)] [string] $GatewayIP,
+               [Parameter(Mandatory = $true)] [string] $SNATRightMacAddressWindows)
+
+        Write-Host "Setting up ARP rule for GW-veth forwarding..."
+
+        $Res = Invoke-Command -Session $Session -ScriptBlock {
+            netsh interface ipv4 add neighbor $Using:SNATVethIfIndex $Using:GatewayIP $Using:SNATRightMacAddressWindows | Out-Null
+            $LASTEXITCODE
+        }
+
+        if ($Res -ne 0) {
+            throw "Setting up ARP rule for GW-veth forwarding... FAILED"
+        }
+
+        Write-Host "Setting up ARP rule for GW-veth forwarding... DONE"
+    }
+
+    function Set-HNSTransparentForwarding {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [int] $HNSAdapterIfIndex)
+
+        Write-Host "Enable forwarding on the HNSTransparent adapter..."
+
+        $Res = Invoke-Command -Session $Session -ScriptBlock {
+            netsh interface ipv4 set interface $Using:HNSAdapterIfIndex forwarding="enabled" | Out-Null
+            $LASTEXITCODE
+        }
+
+        if ($Res -ne 0) {
+            throw "Enable forwarding on the HNSTransparent adapter... FAILED"
+        }
+
+        Write-Host "Enable forwarding on the HNSTransparent adapter... DONE"
+    }
+
     function Test-VMAShouldBeCleanedUp {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $VmName)
@@ -185,6 +331,20 @@ function Test-SNAT {
         Write-Host "SNAT VHDX was properly cleaned up! Test succeeded"
     }
 
+    function Test-CanPingEndhostFromContainer {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [string] $ContainerID,
+               [Parameter(Mandatory = $true)] [string] $EndhostIP)
+
+        $Res = Invoke-Command -Session $Session -ScriptBlock {
+            docker exec $Using:ContainerID ping $Using:EndhostIP | Write-Host
+            $LASTEXITCODE
+        }
+        if ($Res -ne 0) {
+            throw "SNAT test failed"
+        }
+    }
+
     Write-Host "Running Simple SNAT test"
 
     Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
@@ -193,13 +353,11 @@ function Test-SNAT {
 
     # SNAT VM options
     $SNATMgmtSwitchName = "snat-mgmt"
-    $SNATDiskDir = "C:\snat-vm-image"
-    $SNATDiskPath = $SNATDiskDir + "\snat-vm-image.vhdx"
-    $SNATVMDir = "C:\snat-vm"
+    $SNATDiskPath = $SNATConfiguration.DiskDir + "\" + $SNATConfiguration.DiskFileName
 
     # Some random GUID for vrouter_hyperv.py
     $NameLen = 14
-    $SNAT_GUID = "d8cf77cb-b9b1-4d7d-ad3c-ef54f417cb5f"
+    $SNAT_GUID = [guid]::NewGuid().Guid
     $SNATVMName = "contrail-wingw-$SNAT_GUID"
     $SNATLeftName = "int-$SNAT_GUID".Substring(0, $NameLen)
     $SNATRightName = "gw-$SNAT_GUID".Substring(0, $NameLen)
@@ -214,7 +372,7 @@ function Test-SNAT {
 
     # TODO: Remove `ForwardingMAC` when Agent is functional
     New-SNATVM -Session $Session `
-        -VmDirectory $SNATVMDir -DiskPath $SNATDiskPath `
+        -VmDirectory $SNATConfiguration.VMDir -DiskPath $SNATDiskPath `
         -MgmtSwitchName $SNATMgmtSwitchName `
         -VRouterSwitchName $TestConfiguration.VMSwitchName `
         -RightGW $SNATConfiguration.GatewayIP `
@@ -229,111 +387,24 @@ function Test-SNAT {
     $SNATRight = Get-RemoteVMNetAdapterInformation -Session $Session -VMName $SNATVMName -AdapterName $SNATRightName
     Write-Host "Extracting adapters data... DONE"
 
-    $SNATLeftVif = 102
-    $SNATLeftNh = 102
-    $SNATRightVif = 103
-    $SNATRightNh = 103
-
-    Write-Host "Setting up routing rules..."
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
-        route add $Using:SNATConfiguration.GatewayIP mask 255.255.255.255 $Using:SNATConfiguration.VethIP "if" $Using:SNATVeth.IfIndex | Out-Null
-        $LASTEXITCODE
-    }
-    if ($Res -ne 0) {
-        throw "Setting up routing rules... FAILED"
-    }
-    Write-Host "Setting up routing rules... DONE"
-
-    Write-Host "Setting up ARP rule for GW-veth forwarding..."
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
-        netsh interface ipv4 add neighbor $Using:SNATVeth.IfIndex $Using:SNATConfiguration.GatewayIP $Using:SnatRight.MacAddressWindows | Out-Null
-        $LASTEXITCODE
-    }
-    if ($Res -ne 0) {
-        throw "Setting up ARP rule for GW-veth forwarding... FAILED"
-    }
-    Write-Host "Setting up ARP rule for GW-veth forwarding... DONE"
-
-    Write-Host "Enable forwarding on the HNSTransparent adapter..."
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
-        netsh interface ipv4 set interface $Using:HNSAdapter.IfIndex forwarding="enabled" | Out-Null
-        $LASTEXITCODE
-    }
-    if ($Res -ne 0) {
-        throw "Enable forwarding on the HNSTransparent adapter... FAILED"
-    }
-    Write-Host "Enable forwarding on the HNSTransparent adapter... DONE"
+    Set-RoutingRules -Session $Session -GatewayIP $SNATConfiguration.GatewayIP -VethIP $SNATConfiguration.VethIP -SNATVethIfIndex $SNATVeth.IfIndex
+    Set-GWVethForwarding -Session $Session -SNATVethIfIndex $SNATVeth.IfIndex -GatewayIP $SNATConfiguration.GatewayIP -SNATRightMacAddressWindows $SNATRight.MacAddressWindows
+    Set-HNSTransparentForwarding -Session $Session -HNSAdapterIfIndex $HNSAdapter.IfIndex
 
     Write-Host "Start and configure test container..."
     $DockerNetwork = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
     $ContainerID = Invoke-Command -Session $Session -ScriptBlock { docker run -id --network $Using:DockerNetwork microsoft/nanoserver powershell }
     $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session -ContainerID $ContainerID
-    $ContainerVIF = 101
-    $ContainerNH = 101
     Write-Host "Start and configure test container... DONE"
 
-    $InternalVrf = 1
-    $ExternalVrf = 2
+    Set-VRouterConfiguration -Session $Session -PhysicalAdapter $PhysicalAdapter -ContainerAdapter $ContainerNetInfo `
+        -SNATLeftName $SNATLeftName -SNATLeft $SNATLeft -SNATRightName $SNATRightName -SNATRight $SNATRight -SNATVeth $SNATVeth
 
-    $BroadcastInternalNh = 110
-    $BroadcastExternalNh = 111
+    Set-EndhostConfiguration -Session $Session -PhysicalMac $PhysicalAdapter.MacAddress `
+        -EndhostIP $SNATConfiguration.EndhostIP -GatewayIP $SNATConfiguration.GatewayIP `
+        -EndhostUsername $SNATConfiguration.EndhostUsername -EndhostPassword $SNATConfiguration.EndhostPassword
 
-    Write-Host "Configure vRouter..."
-    Invoke-Command -Session $Session -ScriptBlock {
-        # Register physical adapter in Contrail
-        vif --add $Using:PhysicalAdapter.IfName --mac $Using:PhysicalAdapter.MacAddress --vrf 0 --type physical
-        vif --add HNSTransparent --mac $Using:PhysicalAdapter.MacAddress --vrf 0 --type vhost --xconnect $Using:PhysicalAdapter.IfName
-
-        # Register container's NIC as vif
-        vif --add $Using:ContainerNetInfo.AdapterShortName --mac $Using:ContainerNetInfo.MacAddress --vrf $Using:InternalVrf --type virtual --vif $Using:ContainerVIF
-        nh --create $Using:ContainerNH --vrf $Using:InternalVrf --type 2 --el2 --oif $Using:ContainerVIF
-        rt -c -v $Using:InternalVrf -f 1 -e $Using:ContainerNetInfo.MacAddress -n $Using:ContainerNH
-
-        # Register SNAT's left adapter ("int")
-        vif --add $Using:SNATLeftName --mac $Using:SNATLeft.MacAddress --vrf $Using:InternalVrf --type virtual --vif $Using:SNATLeftVif
-        nh --create $Using:SNATLeftNh --vrf $Using:InternalVrf --type 2 --el2 --oif $Using:SNATLeftVif
-        rt -c -v $Using:InternalVrf -f 1 -e $Using:SNATLeft.MacAddress -n $Using:SNATLeftNh
-
-        # Register SNAT's right adapter ("gw")
-        vif --add $Using:SNATRightName --mac $Using:SNATRight.MacAddress --vrf $Using:ExternalVrf --type virtual --vif $Using:SNATRightVif
-        nh --create $Using:SNATRightNh --vrf $Using:ExternalVrf --type 2 --el2 --oif $Using:SNATRightVif
-        rt -c -v $Using:ExternalVrf -f 1 -e $Using:SNATRight.MacAddress -n $Using:SNATRightNh
-
-        # Register SNAT''s additional adapter ("veth")
-        vif --add $Using:SNATVeth.Name --mac $Using:SNATVeth.MacAddress --vrf $Using:ExternalVrf --type virtual --vif $Using:SNATVeth.vif
-        nh --create $Using:SNATVeth.nh --vrf $Using:ExternalVrf --type 2 --el2 --oif $Using:SNATVeth.vif
-        rt -c -v $Using:ExternalVrf -f 1 -e $Using:SNATVeth.MacAddress -n $Using:SNATVeth.nh
-
-        # Broadcast NH (internal network)
-        nh --create $Using:BroadcastInternalNh --vrf $Using:InternalVrf --type 6 --cen --cni $Using:ContainerNH --cni $Using:SNATLeftNh
-        rt -c -v $Using:InternalVrf -f 1 -e ff:ff:ff:ff:ff:ff -n $Using:BroadcastInternalNh
-
-        # Broadcast NH (external network)
-        nh --create $Using:BroadcastExternalNh --vrf $Using:ExternalVrf --type 6 --cen --cni $Using:SNATRightNh --cni $Using:SNATVeth.nh
-        rt -c -v $Using:ExternalVrf -f 1 -e ff:ff:ff:ff:ff:ff -n $Using:BroadcastExternalNh
-    }
-    Write-Host "Configure vRouter... DONE"
-
-    Write-Host "Configure endhost..."
-    $PhysicalMac = $PhysicalAdapter.MacAddress
-    $GatewayIP = $SNATConfiguration.GatewayIP
-    $EndhostPassword = $SNATConfiguration.EndhostPassword
-    $EndhostSecurePassword = ConvertTo-SecureString $SNATConfiguration.EndhostPassword -AsPlainText -Force
-    $EndhostCredentials = New-Object System.Management.Automation.PSCredential($SNATConfiguration.EndhostUsername, $EndhostSecurePassword)
-    Invoke-Command -Session $Session -ScriptBlock {
-        $EndhostSession = New-SSHSession -IPAddress $Using:SNATConfiguration.EndhostIP -Credential $Using:EndhostCredentials -AcceptKey
-        Invoke-SSHCommand -SessionId $EndhostSession.SessionId `
-            -Command "echo $Using:EndhostPassword | sudo -S arp -i eth0 -s $Using:GatewayIP $Using:PhysicalMac" | Out-Null
-    }
-    Write-Host "Configure endhost... DONE"
-
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
-        docker exec $Using:ContainerID ping $Using:SNATConfiguration.EndhostIP | Write-Host
-        $LASTEXITCODE
-    }
-    if ($Res -ne 0) {
-        throw "SNAT test failed"
-    }
+    Test-CanPingEndhostFromContainer -Session $Session -ContainerID $ContainerID -EndhostIP $SNATConfiguration.EndhostIP
 
     Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:ContainerID } | Out-Null
 
@@ -342,7 +413,7 @@ function Test-SNAT {
     Remove-MgmtSwitch -Session $Session -MgmtSwitchName $SNATMgmtSwitchName
 
     Test-VMAShouldBeCleanedUp -VMName $SNATVMName -Session $Session
-    Test-VHDXShouldBeCleanedUp -GUID $SNAT_GUID -DiskDir $SNATDiskDir -Session $Session
+    Test-VHDXShouldBeCleanedUp -GUID $SNAT_GUID -DiskDir $SNATConfiguration.DiskDir -Session $Session
 
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
