@@ -1,7 +1,7 @@
 # This script
 # - generates repo tool manifest that uses branches specified in parameters
 # - launches a Linux Virtualbox VM using Vagrant
-# - injects the manifest file
+# - checkouts proper branches
 # - builds vRouter Agent
 # parameters:
 # TOOLS_BRANCH CONTROLLER_BRANCH VROUTER_BRANCH GENERATEDS_BRANCH SANDESH_BRANCH
@@ -29,7 +29,4 @@ popd
 pushd vrouter
   git checkout $3
 popd
-scons -Q vrouter
-exit $?"
-retcode=$?
-exit $retcode
+scons vrouter"
