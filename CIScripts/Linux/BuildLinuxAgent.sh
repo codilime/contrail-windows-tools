@@ -1,10 +1,20 @@
-# This script
-# - generates repo tool manifest that uses branches specified in parameters
-# - launches a Linux Virtualbox VM using Vagrant
-# - checkouts proper branches
-# - builds vRouter Agent
-# parameters:
-# TOOLS_BRANCH CONTROLLER_BRANCH VROUTER_BRANCH GENERATEDS_BRANCH SANDESH_BRANCH
+# Launches a Vagrant VM and builds vRouter Agent.
+# Run this script from the directory that contains Vagrantfile.
+
+if [ "$#" -ne 5 ]; then
+    echo "Usage: TOOLS_BRANCH CONTROLLER_BRANCH VROUTER_BRANCH GENERATEDS_BRANCH SANDESH_BRANCH"
+    exit 1
+fi
+
+set -e
+
+if [ ! -d ".vagrant" ]; then
+    echo " !!! WARNING:"
+    echo ".vagrant directory not found! This may cause cleanup issues!!!"
+    echo "see if any old virtualbox processes are running just in case:"
+    ps aux | grep virtualbox
+    echo "continuing..."
+fi
 
 vagrant halt
 vagrant destroy -f
