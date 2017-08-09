@@ -8,16 +8,6 @@ fi
 
 set -e
 
-if [ ! -d ".vagrant" ]; then
-    echo " !!! WARNING:"
-    echo ".vagrant directory not found! This may cause cleanup issues!!!"
-    echo "see if any old virtualbox processes are running just in case:"
-    ps aux | grep virtualbox
-    echo "continuing..."
-fi
-
-vagrant halt
-vagrant destroy -f
 vagrant up
 vagrant ssh -c "
 ls
@@ -40,3 +30,7 @@ pushd vrouter
   git checkout $3
 popd
 scons vrouter"
+retcode=$?
+vagrant halt
+vagrant destroy -f
+exit retcode
