@@ -17,7 +17,7 @@ Write-Host "Installing test runner"
 go get -u -v github.com/onsi/ginkgo/ginkgo
 
 Write-Host "Building driver"
-go build -v $Env:DRIVER_SRC_PATH
+go get -u -v $Env:DRIVER_SRC_PATH
 
 $srcPath = "$Env:GOPATH/src/$Env:DRIVER_SRC_PATH"
 Write-Host $srcPath
