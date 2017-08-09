@@ -1,3 +1,2 @@
 & .\BuildDockerDriver.ps1
-# & .\BuildExtension.ps1
-# & .\BuildAgent.ps1
+& .\BuildContrail.ps1
