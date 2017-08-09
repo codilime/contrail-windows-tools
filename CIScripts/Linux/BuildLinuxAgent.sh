@@ -31,4 +31,4 @@ scons vrouter contrail-vrouter-agent"
 retcode=$?
 vagrant halt
 vagrant destroy -f
-return $retcode
+exit $retcode
