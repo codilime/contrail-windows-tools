@@ -1,17 +1,7 @@
-if ($Env:ENABLE_TRACE -eq $true) {
-    Set-PSDebug -Trace 1
-}
-
-# Refresh Path
-$Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-
-# Stop script on error
-$ErrorActionPreference = "Stop"
-
 $Env:GOPATH=pwd
 
 New-Item -ItemType Directory ./bin
-Set-Location bin
+Push-Location bin
 
 Write-Host "Installing test runner"
 go get -u -v github.com/onsi/ginkgo/ginkgo
@@ -44,3 +34,5 @@ Move-Item $srcPath/installer.msi ./
 
 $cerp = Get-Content $Env:CERT_PASSWORD_FILE_PATH
 & $Env:SIGNTOOL_PATH sign /f $Env:CERT_PATH /p $cerp installer.msi
+
+Pop-Location
