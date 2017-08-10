@@ -1,30 +1,18 @@
-Write-Host "Copying third-party dependencies"
-New-Item -ItemType Directory ./third_party
-Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\agent\*" third_party/
-Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\common\*" third_party/
-Copy-Item -Recurse "$Env:THIRD_PARTY_CACHE_PATH\extension\*" third_party\
-Copy-Item -Recurse third_party\cmocka vrouter\test\
+. $PSScriptRoot\InitializeCIScript.ps1
+. $PSScriptRoot\BuildFunctions.ps1
 
-Copy-Item tools/build/SConstruct ./
+$Repos = @(
+    [Repo]::new($Env:TOOLS_REPO_URL, $Env:TOOLS_BRANCH, "tools/build/", "windows"),
+    [Repo]::new($Env:SANDESH_REPO_URL, $Env:SANDESH_BRANCH, "tools/sandesh/", "windows"),
+    [Repo]::new($Env:GENERATEDS_REPO_URL, $Env:GENERATEDS_BRANCH, "tools/generateDS/", "windows"),
+    [Repo]::new($Env:VROUTER_REPO_URL, $Env:VROUTER_BRANCH, "vrouter/", "windows"),
+    [Repo]::new($Env:WINDOWSSTUBS_REPO_URL, $Env:WINDOWSSTUBS_BRANCH, "windows/", "windows"),
+    [Repo]::new($Env:CONTROLLER_REPO_URL, $Env:CONTROLLER_BRANCH, "controller/", "windows3.1")
+)
 
-$cerp = Get-Content $Env:CERT_PASSWORD_FILE_PATH
+Clone-Repos -Repos $Repos
+Contrail-Common-Actions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
 
-Write-Host "Building Agent, MSI, API, Extension and Utils"
-scons contrail-vrouter-agent contrail-vrouter-agent.msi controller/src/vnsw/contrail_vrouter_api:sdist vrouter
-if ($LASTEXITCODE -ne 0) {
-    throw "Building Contrail failed"
-}
+Build-Extension -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
+Build-Agent -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
-$vRouterMSI = "build\debug\vrouter\extension\vRouter.msi"
-$utilsMSI = "build\debug\vrouter\utils\utils.msi"
-
-Write-Host "Signing MSIs"
-& "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $utilsMSI
-if ($LASTEXITCODE -ne 0) {
-    throw "Signing utilsMSI failed"
-}
-
-& "$Env:SIGNTOOL_PATH" sign /f "$Env:CERT_PATH" /p $cerp $vRouterMSI
-if ($LASTEXITCODE -ne 0) {
-    throw "Signing vRouterMSI failed"
-}
