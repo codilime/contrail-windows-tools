@@ -7,4 +7,4 @@ $Repos = @(
 
 Clone-Repos -Repos $Repos
 
-Build-DockerDriver -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH, -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
+Build-DockerDriver -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
