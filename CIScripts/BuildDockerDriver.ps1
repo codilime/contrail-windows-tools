@@ -1,38 +1,10 @@
-$Env:GOPATH=pwd
+. $PSScriptRoot\InitializeCIScript.ps1
+. $PSScriptRoot\BuildFunctions.ps1
 
-New-Item -ItemType Directory ./bin
-Push-Location bin
+$Repos = @(
+    [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker" ,"master")
+)
 
-Write-Host "Installing test runner"
-go get -u -v github.com/onsi/ginkgo/ginkgo
+Clone-Repos -Repos $Repos
 
-Write-Host "Building driver"
-go build -v $Env:DRIVER_SRC_PATH
-
-$srcPath = "$Env:GOPATH/src/$Env:DRIVER_SRC_PATH"
-Write-Host $srcPath
-
-Write-Host "Precompiling tests"
-$modules = @("driver", "controller", "hns", "hnsManager")
-$modules.ForEach({
-    .\ginkgo.exe build $srcPath/$_
-    Move-Item $srcPath/$_/$_.test ./
-})
-
-Write-Host "Copying Agent API python script"
-Copy-Item $srcPath/scripts/agent_api.py ./
-
-Write-Host "Intalling MSI builder"
-go get -u -v github.com/mh-cbon/go-msi
-
-Write-Host "Building MSI"
-Push-Location $srcPath
-& "$Env:GOPATH/bin/go-msi" make --msi installer.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
-Pop-Location
-
-Move-Item $srcPath/installer.msi ./
-
-$cerp = Get-Content $Env:CERT_PASSWORD_FILE_PATH
-& $Env:SIGNTOOL_PATH sign /f $Env:CERT_PATH /p $cerp installer.msi
-
-Pop-Location
+Build-DockerDriver -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH, -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
