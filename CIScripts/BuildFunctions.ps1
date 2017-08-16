@@ -12,7 +12,7 @@ class Repo {
     }
 }
 
-function Clone-Repos {
+function Copy-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
     
     Write-Host "Cloning repositories"
@@ -36,7 +36,7 @@ function Clone-Repos {
     })
 }
 
-function Contrail-Common-Actions {
+function Invoke-ContrailCommonActions {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
     
@@ -50,7 +50,7 @@ function Contrail-Common-Actions {
     Copy-Item tools\build\SConstruct .\
 }
 
-function Sign-MSI {
+function Set-MSISignature {
     Param ([Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
@@ -59,11 +59,11 @@ function Sign-MSI {
     $cerp = Get-Content $CertPasswordFilePath
     & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
     if ($LASTEXITCODE -ne 0) {
-    throw "Signing $MSIPath failed"
-}
+        throw "Signing $MSIPath failed"
+    }
 }
 
-function Build-DockerDriver {
+function Invoke-DockerDriverBuild {
     Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -103,12 +103,12 @@ function Build-DockerDriver {
 
     Move-Item $srcPath/installer.msi ./
     
-    Sign-MSI -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "installer.msi"
+    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "installer.msi"
 
     Pop-Location
 }
 
-function Build-Extension {
+function Invoke-ExtensionBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -122,20 +122,20 @@ function Build-Extension {
     Write-Host "Building Extension and Utils"
     scons vrouter
     if ($LASTEXITCODE -ne 0) {
-    throw "Building vRouter solution failed"
-}
+        throw "Building vRouter solution failed"
+    }
 
     $vRouterMSI = "build\debug\vrouter\extension\vRouter.msi"
     $utilsMSI = "build\debug\vrouter\utils\utils.msi"
     
     Write-Host "Signing utilsMSI"
-    Sign-MSI -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
     
     Write-Host "Signing vRouterMSI"
-    Sign-MSI -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
 }
 
-function Build-Agent {
+function Invoke-AgentBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
     
     Write-Host "Copying Agent dependencies"
@@ -145,7 +145,7 @@ function Build-Agent {
     Write-Host "Building Agent, MSI and API"
     scons contrail-vrouter-agent contrail-vrouter-agent.msi controller/src/vnsw/contrail_vrouter_api:sdist
     if ($LASTEXITCODE -ne 0) {
-    throw "Building Agent failed"
-}
+        throw "Building Agent failed"
+    }
 }
 

@@ -10,8 +10,8 @@ $Repos = @(
     [Repo]::new($Env:CONTROLLER_REPO_URL, $Env:CONTROLLER_BRANCH, "controller/", "windows3.1")
 )
 
-Clone-Repos -Repos $Repos
-Contrail-Common-Actions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
+Copy-Repos -Repos $Repos
+Invoke-ContrailCommonActions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
 
-Build-Agent -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
+Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
