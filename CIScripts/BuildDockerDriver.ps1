@@ -2,7 +2,7 @@
 . $PSScriptRoot\BuildFunctions.ps1
 
 $Repos = @(
-    [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker" ,"master")
+    [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker", "master")
 )
 
 Copy-Repos -Repos $Repos
