@@ -98,12 +98,12 @@ function Invoke-DockerDriverBuild {
 
     Write-Host "Building MSI"
     Push-Location $srcPath
-    & "$Env:GOPATH/bin/go-msi" make --msi installer.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
+    & "$Env:GOPATH/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
     Pop-Location
 
-    Move-Item $srcPath/installer.msi ./
+    Move-Item $srcPath/docker-driver.msi ./
     
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "installer.msi"
+    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "docker-driver.msi"
 
     Pop-Location
 }
