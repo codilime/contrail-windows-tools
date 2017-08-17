@@ -1,8 +1,8 @@
 class Repo {
     [string] $Url;
     [string] $Branch;
-    [string] $DefaultBranch;
     [string] $Dir;
+    [string] $DefaultBranch;
 
     Repo ([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch) {
         $this.Url = $Url
