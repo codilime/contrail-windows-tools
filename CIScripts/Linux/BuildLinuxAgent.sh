@@ -27,7 +27,7 @@ popd
 pushd vrouter
   git checkout $3 --
 popd
-scons vrouter contrail-vrouter-agent"
+scons vrouter/vrouter.ko"
 retcode=$?
 vagrant halt
 vagrant destroy -f
