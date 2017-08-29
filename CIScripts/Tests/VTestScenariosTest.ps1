@@ -7,18 +7,10 @@ function Test-VTestScenarios {
     Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
     $VMSwitchName = $TestConfiguration.VMSwitchName
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Session -ScriptBlock {
         Push-Location C:\Artifacts\
-
         vtest\all_tests_run.ps1 -VMSwitchName $Using:VMSwitchName -TestsFolder vtest\tests | Write-Host
-        $Res = $LASTEXITCODE
-
         Pop-Location
-        return $Res
-    }
-
-    if ($Res -ne 0) {
-        throw "===> VTest scenarios test failed!"
     }
 
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
