@@ -158,6 +158,14 @@ function New-TestbedVMs {
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
 
+        Write-Host "Copying Agent test executables"
+        $AgentTextExecutables = Get-ChildItem .\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
+        Foreach ($TestExecutable in $AgentTextExecutables) {
+            Write-Host "    Copying $TestExecutable"
+            Copy-Item -ToSession $Session -Path "agent\$TestExecutable" -Destination C:\Artifacts\
+        }
+        Copy-Item -ToSession $Session -Path "agent\vnswa_cfg.ini" -Destination C:\Artifacts\
+
         Write-Host "Copying vtest scenarios"
         Copy-Item -ToSession $Session -Path "vrouter\utils\vtest" -Destination C:\Artifacts\ -Recurse -Force
 
