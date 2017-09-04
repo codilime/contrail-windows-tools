@@ -3,30 +3,42 @@ class Repo {
     [string] $Branch;
     [string] $Dir;
     [string] $DefaultBranch;
+    [bool] $AllowBranchOverride;
 
-    Repo ([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch) {
+    [void] init([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch, [bool] $AllowBranchOverride) {
         $this.Url = $Url
         $this.Branch = $Branch
         $this.Dir = $Dir
         $this.DefaultBranch = $DefaultBranch
+        $this.AllowBranchOverride = $AllowBranchOverride
+    }
+
+    Repo ([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch) {
+        $this.init($Url, $Branch, $Dir, $DefaultBranch, $true)
+    }
+
+    Repo ([string] $Url, [string] $Branch, [string] $Dir, [string] $DefaultBranch, [bool] $AllowBranchOverride) {
+        $this.init($Url, $Branch, $Dir, $DefaultBranch, $AllowBranchOverride)
     }
 }
 
 function Copy-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
-
+    
     $Job.Step("Cloning repositories", {
         $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
         $Repos.ForEach({
-            # If there is only one unique custom branch provided, at first try to use it for all repos.
-            # Otherwise, use branch specific for this repo.
-            $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
+            if ($_.AllowBranchOverride) {
+                # If there is only one unique custom branch provided, at first try to use it for all repos.
+                # Otherwise, use branch specific for this repo.
+                $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
 
-            Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
-            git clone -b $CustomMultiBranch $_.Url $_.Dir
+                Write-Output $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
+                git clone -b $CustomMultiBranch $_.Url $_.Dir
+            }
 
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
+            if (($LASTEXITCODE -ne 0) -or ! $_.AllowBranchOverride) {
+                Write-Output $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
                 git clone -b $_.Branch $_.Url $_.Dir
 
                 if ($LASTEXITCODE -ne 0) {
@@ -83,6 +95,10 @@ function Invoke-DockerDriverBuild {
     $Job.PushStep("Docker driver build")
     $Env:GOPATH=pwd
     $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
+
+    $Job.Step("Contrail-go-api source code generation", {
+        python tools/generateds/generateDS.py -f -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ -g golang-api controller/src/schema/vnc_cfg.xsd
+    })
 
     New-Item -ItemType Directory ./bin
     Push-Location bin
@@ -166,7 +182,8 @@ function Invoke-AgentBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Agent build")
 
@@ -174,8 +191,11 @@ function Invoke-AgentBuild {
         Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
     })
 
+    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+    $BuildModeOption = "--optimization=" + $BuildMode
+
     $Job.Step("Building API", {
-        scons controller/src/vnsw/contrail_vrouter_api:sdist
+        scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
         }
@@ -215,8 +235,7 @@ function Invoke-AgentBuild {
         if ($Tests.count -gt 0) {
             $TestsString = $Tests -join " "
         }
-        $BuildCommand = "scons contrail-vrouter-agent.msi -j 4"
-        $AgentAndTestsBuildCommand = "{0} {1}" -f "$BuildCommand", "$TestsString"
+        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" -f "$BuildModeOption", "$TestsString"
         Invoke-Expression $AgentAndTestsBuildCommand
 
         if ($LASTEXITCODE -ne 0) {
@@ -224,7 +243,7 @@ function Invoke-AgentBuild {
         }
     })
 
-    $agentMSI = "build\debug\vnsw\agent\contrail\contrail-vrouter-agent.msi"
+    $agentMSI = "build\{0}\vnsw\agent\contrail\contrail-vrouter-agent.msi" -f $BuildMode
 
     Write-Host "Signing agentMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
