@@ -154,12 +154,8 @@ function Invoke-AgentBuild {
 
     Write-Host "Building tests"
 
-    $Tests = @()
-
-    # KSync tests almost work
-    # $Tests = @("agent:test_ksync", "src/ksync:ksync_test")
-
     # TODO: Add other tests here once they are functional.
+    $Tests = @("agent:test_ksync", "agent:test_vnswif", "src/ksync:ksync_test")
 
     if ($Tests.count -gt 0) {
         $TestsString = $Tests -join " "
