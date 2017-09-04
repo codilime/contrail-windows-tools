@@ -69,6 +69,7 @@ Test-TCPCommunication -Session $Sessions[0] -TestConfiguration $TestConfiguratio
 Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
+Test-VRouterAgentIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
 if($Env:RUN_DRIVER_TESTS -eq "1") {
     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
