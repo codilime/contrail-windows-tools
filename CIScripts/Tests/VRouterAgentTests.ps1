@@ -192,6 +192,8 @@ function Test-VRouterAgentIntegration {
         Assert-IsOnlyOnePkt0Injected -Session $Session
     }
 
+    . $PSScriptRoot\CommonTestCode.ps1
+
     # Prepate Agent config file
     New-ConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
