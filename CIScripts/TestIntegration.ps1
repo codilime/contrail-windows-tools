@@ -46,6 +46,8 @@ $TestConfiguration = [TestConfiguration] @{
     VMSwitchName = "Layered " + $Env:ADAPTER_NAME;
     VHostName = "vEthernet (HNSTransparent)"
     ForwardingExtensionName = $Env:FORWARDING_EXTENSION_NAME;
+    AgentConfigFilePath = "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.conf";
+    AgentSampleConfigFilePath = "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.conf.sample";
     DockerDriverConfiguration = $DockerDriverConfiguration;
 }
 

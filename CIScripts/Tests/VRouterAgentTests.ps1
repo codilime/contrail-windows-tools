@@ -6,6 +6,54 @@ function Test-VRouterAgentIntegration {
     # Private functions of Test-VRouterAgentIntegration
     #
 
+    function New-ConfigFile {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        # Gather information about testbed's network adapters
+        $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
+                -Session $Session `
+                -AdapterName $TestConfiguration.VHostName
+
+        $PhysicalAdapter = Get-RemoteNetAdapterInformation `
+                -Session $Session `
+                -AdapterName $TestConfiguration.AdapterName
+
+        # Prepare parameters for script block
+        $ControllerIP = $TestConfiguration.DockerDriverConfiguration.ControllerIP
+        $VHostIfName = $HNSTransparentAdapter.ifName
+        $PhysIfName = $PhysicalAdapter.ifName
+
+        $SourceConfigFilePath = $TestConfiguration.AgentSampleConfigFilePath
+        $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
+
+        Invoke-Command -Session $Session -ScriptBlock {
+            $ControllerIP = $Using:ControllerIP
+            $VHostIfName = $Using:HNSTransparentIfName
+            $PhysIfName = $Using:PhysicalAdapterIfName
+
+            $SourceConfigFilePath = $Using:SourceConfigFilePath
+            $DestConfigFilePath = $Using:DestConfigFilePath
+
+            $ConfigFileContent = Get-Content $SourceConfigFilePath
+
+            # Insert server IP only in [CONTROL-NODE] and [DISCOVERY] (first 2 occurrences of "server=")
+            [regex] $ServerIpPattern = "^# server=.*"
+            $ServerIpString = "server=$ControllerIP"
+            $ConfigFileContent = $ConfigFileContent.replace($ServerIpPattern, $ServerIpString, 2)
+
+            # Insert ifName of HNSTransparent interface
+            $ConfigFileContent = $ConfigFileContent -Replace "^# name=vhost0", "name=$VHostIfName"
+
+            # Insert ifName of Ethernet1 interface
+            $ConfigFileContent = $ConfigFileContent `
+                                    -Replace "^# physical_interface=vnet0", "physical_interface=$PhysIfName"
+
+            # Save file with prepared config
+            Set-Content $DestConfigFilePath $ConfigFileContent
+        }
+    }
+
     function Assert-ExtensionIsRunning {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
@@ -30,7 +78,7 @@ function Test-VRouterAgentIntegration {
     function Assert-AgentIsNotRunning {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-        if (Test-IsVRouterAgentEnable -Session $Session) {
+        if (Test-IsVRouterAgentEnabled -Session $Session) {
             throw "vRouter Agent is running. EXPECTED: vRouter Agent is not running"
         }
     }
@@ -84,7 +132,7 @@ function Test-VRouterAgentIntegration {
         Assert-NoVifs -Session $Session
 
         # When Agent is started
-        Enable-VRouterAgent -Session $Session
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
         Start-Sleep -Seconds 15
 
@@ -102,7 +150,7 @@ function Test-VRouterAgentIntegration {
         Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
         # Given Agent is running
-        Enable-VRouterAgent -Session $Session
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
         Start-Sleep -Seconds 15
 
@@ -126,7 +174,7 @@ function Test-VRouterAgentIntegration {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         # Given Agent is running
-        Enable-VRouterAgent -Session $Session
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Test-IsVRouterAgentEnable -Session $Session
         Start-Sleep -Seconds 15
 
@@ -136,7 +184,7 @@ function Test-VRouterAgentIntegration {
         # When Agent is restarted
         Disable-VRouterAgent -Session $Session
         Assert-AgentIsNotRunning -Session $Session
-        Enable-VRouterAgent -Session $Session
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
         Start-Sleep -Seconds 15
 
@@ -144,7 +192,13 @@ function Test-VRouterAgentIntegration {
         Assert-IsOnlyOnePkt0Injected -Session $Session
     }
 
+    # Prepate Agent config file
+    New-ConfigFile -Session $Session -TestConfiguration $TestConfiguration
+
     Test-InitialPkt0Injection -Session $Session -TestConfiguration $TestConfiguration
     Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session -TestConfiguration $TestConfiguration
     Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session -TestConfiguration $TestConfiguration
+
+    # Test cleanup
+    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 }

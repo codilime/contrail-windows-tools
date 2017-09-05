@@ -17,6 +17,8 @@ class TestConfiguration {
     [string] $VHostName;
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
+    [string] $AgentConfigFilePath;
+    [string] $AgentSampleConfigFilePath;
 }
 
 function Stop-ProcessIfExists {
