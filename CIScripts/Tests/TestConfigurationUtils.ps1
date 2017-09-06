@@ -21,6 +21,9 @@ class TestConfiguration {
     [string] $AgentSampleConfigFilePath;
 }
 
+$MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
+$TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
+
 function Stop-ProcessIfExists {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [string] $ProcessName)
