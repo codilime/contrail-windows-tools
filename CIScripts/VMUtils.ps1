@@ -36,6 +36,7 @@ function Initialize-VIServer {
     }
     finally {
         [void] $Mutex.ReleaseMutex()
+        [void] $Mutex.Close()
     }
 
     Pop-Location
