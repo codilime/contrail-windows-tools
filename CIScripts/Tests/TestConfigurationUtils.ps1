@@ -144,9 +144,13 @@ function Enable-VRouterAgent {
     Write-Host "Enabling Agent"
 
     Invoke-Command -Session $Session -ScriptBlock {
+        $ConfigFilePath = $Using:ConfigFilePath
+
         Start-Job -ScriptBlock {
-            & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $Using:ConfigFilePath
-        } | Out-Null
+            Param ($ConfigFilePath)
+
+            & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $ConfigFilePath
+        } -ArgumentList $ConfigFilePath | Out-Null
     }
 }
 
