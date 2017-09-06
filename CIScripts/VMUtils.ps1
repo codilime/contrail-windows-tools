@@ -64,9 +64,10 @@ function New-TestbedVMs {
 
         $AllDatastores = Get-Datastore -Name $VMCreationSettings.DatastoresList
         $EmptiestDatastore = ($AllDatastores | Sort-Object -Property FreeSpaceGB -Descending)[0]
+        $BaseSnapshot = (Get-Snapshot -VM $Template)[0]
 
-        New-VM -Name $VMName -Template $Template -Datastore $EmptiestDatastore -ResourcePool $ResourcePool -Location $VMCreationSettings.NewVMLocation `
-            -OSCustomizationSpec $CustomizationSpec -ErrorAction Stop -Verbose | Out-Null
+        New-VM -VM $Template -Name $VMName -LinkedClone -ReferenceSnapshot $BaseSnapshot -Datastore $EmptiestDatastore -ResourcePool $ResourcePool `
+        -Location $VMCreationSettings.NewVMLocation -OSCustomizationSpec $CustomizationSpec -ErrorAction Stop -Verbose | Out-Null
         #New-HardDisk -VM $vm -CapacityGB 2 -Datastore DUMP -StorageFormat thin -Controller (Get-ScsiController -VM $vm) -Persistence IndependentPersistent -Verbose # TODO: Fix after JW-796
         Start-VM -VM $VMName -Confirm:$false -ErrorAction Stop -Verbose | Out-Null
     }
