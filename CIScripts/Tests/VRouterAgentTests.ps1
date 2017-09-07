@@ -102,7 +102,7 @@ function Test-VRouterAgentIntegration {
                 return
             }
 
-            Start-Sleep -s $SleepTimeBetweenChecks
+            Start-Sleep -s $TimeBetweenChecksInSeconds
         }
 
         throw "vRouter Agent is running. EXPECTED: vRouter Agent is not running"
