@@ -4,6 +4,9 @@ function Test-VRouterAgentIntegration {
 
     . $PSScriptRoot\CommonTestCode.ps1
 
+    $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
+    $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
+
     #
     # Private functions of Test-VRouterAgentIntegration
     #
@@ -72,8 +75,8 @@ function Test-VRouterAgentIntegration {
     function Assert-AgentIsRunning {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-        $MaxWaitTimeInSeconds = $global:MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-        $TimeBetweenChecksInSeconds = $global:TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
+        $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
+        $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
         $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
 
         for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
@@ -90,8 +93,8 @@ function Test-VRouterAgentIntegration {
     function Assert-AgentIsNotRunning {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-        $MaxWaitTimeInSeconds = $global:MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-        $TimeBetweenChecksInSeconds = $global:TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
+        $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
+        $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
         $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
 
         for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
