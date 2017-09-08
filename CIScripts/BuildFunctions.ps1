@@ -45,10 +45,10 @@ function Invoke-ContrailCommonActions {
     
     Write-Host "Copying common third-party dependencies"
     New-Item -ItemType Directory .\third_party
-    Copy-Item -Recurse -Exclude "boost_1_62_0" "$ThirdPartyCache\common\*" third_party\
+    Copy-Item -Recurse "$ThirdPartyCache\common\*" third_party\
     
     Write-Host "Symlinking boost"
-    cmd /c mklink /D "third_party\boost_1_62_0" "$ThirdPartyCache\common\boost_1_62_0"
+    cmd /c mklink /D "third_party\boost_1_62_0" "$ThirdPartyCache\boost_1_62_0"
 
     Copy-Item tools\build\SConstruct .\
 }
