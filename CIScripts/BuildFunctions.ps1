@@ -118,7 +118,7 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
     
     Write-Host "Copying Extension dependencies"
-    Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\ 
+    Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
     Copy-Item -Recurse third_party\cmocka vrouter\test\
 
     
