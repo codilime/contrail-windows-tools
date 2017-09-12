@@ -50,7 +50,7 @@ function Invoke-ContrailCommonActions {
         Copy-Item -Destination third_party\ -Recurse -Force
 
     Write-Host "Symlinking boost"
-    New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "$ThirdPartyCache\boost_1_62_0"
+    New-Item -Path "third_party\boost_1_62_0" -ItemType SymbolicLink -Value "J:\boost_1_62_0"
 
     Copy-Item tools\build\SConstruct .\
 }
