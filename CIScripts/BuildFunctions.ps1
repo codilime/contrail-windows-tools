@@ -46,7 +46,6 @@ function Invoke-ContrailCommonActions {
     
     $TimeLogger.LogAndMeasure("Copying common third-party dependencies", {
         New-Item -ItemType Directory .\third_party
-        Copy-Item -Recurse "$ThirdPartyCache\common\*" third_party\
         Get-ChildItem "$ThirdPartyCache\common" -Directory |
             Where-Object{$_.Name -notlike "boost*"} |
             Copy-Item -Destination third_party\ -Recurse -Force
