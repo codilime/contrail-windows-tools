@@ -1,6 +1,6 @@
 . $PSScriptRoot\InitializeCIScript.ps1
 . $PSScriptRoot\BuildFunctions.ps1
-. $PSScriptRoot\TimeLogger.ps1
+. $PSScriptRoot\Job.ps1
 
 $Repos = @(
     [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker", "master"),
@@ -12,7 +12,7 @@ $Repos = @(
     [Repo]::new($Env:CONTROLLER_REPO_URL, $Env:CONTROLLER_BRANCH, "controller/", "windows3.1")
 )
 
-$TimeLogger = [TimeLogger]::new()
+$Job = [Job]::new("Build-all")
 
 Copy-Repos -Repos $Repos
 Invoke-ContrailCommonActions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
@@ -21,4 +21,4 @@ Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:
 Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
 Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
-$TimeLogger.Done()
+$Job.Done()

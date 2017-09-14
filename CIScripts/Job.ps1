@@ -1,61 +1,71 @@
 #
-# TimeLogger is a utility class that keeps track of time that parts of code
+# Job is a utility class that keeps track of time that parts of code
 # take to execute and prints them lazily.
 #
 # Class usage example:
 #
 # ```
-# $t = [TimeLogger]::new()
-# $t.Push("t")
-#     $t.Push("t0")
-#     $t.Pop()
-#     $t.Push("t1")
-#         $t.Push("t11")
-#         $t.Pop()
-#         $t.Push("t12")
-#         $t.Pop()
-#     $t.Pop()
-#     $t.Push("t2")
-#     $t.Pop()
-#     $t.Measure("ttt1", { echo "test123" })
-#     $t.LogAndMeasure("ttt2", { echo "test456" })
-# $t.Pop()
-# $t.Push("tx")
-#     $t.Push("Should be closed automatically")
+# $t = [Job]::new("asdf")
+# $t.PushStep("t")
+#     $t.PushStep("t0")
+#     $t.PopStep()
+#     $t.PushStep("t1")
+#         $t.PushStep("t11")
+#         $t.PopStep()
+#         $t.PushStep("t12")
+#         $t.PopStep()
+#     $t.PopStep()
+#     $t.PushStep("t2")
+#     $t.PopStep()
+#     $t.StepQuiet("ttt1", { echo "test123" })
+#     $t.Step("ttt2", { echo "test456" })
+# $t.PopStep()
+# $t.PushStep("tx")
+#     $t.PushStep("Should be closed automatically")
 # $t.Done()
 # ```
 #
 # console output:
 #
 # ```
+# t
+# t0
+# t1
+# t11
+# t12
+# t2
+# ttt1
 # test123
 # ttt2
+# ttt2
 # test456
+# tx
+# Should be closed automatically
 # =======================================================
 
 #  Time measurement results:
 
-#      - [00:00:00.1036883]: Total
-#                - [00:00:00.0560581]: t
-#                          - [00:00:00.0089936]: t0
-#                          - [00:00:00.0019979]: t1
-#                                    - [00:00:00]: t11
+#      - [00:00:00.2979891]: asdf
+#                - [00:00:00.1989877]: t
+#                          - [00:00:00.0099960]: t0
+#                          - [00:00:00.0160005]: t1
+#                                    - [00:00:00.0009887]: t11
 #                                    - [00:00:00]: t12
-#                          - [00:00:00.0009994]: t2
-#                          - [00:00:00.0014296]: ttt1
-#                          - [00:00:00]: ttt2
-#                - [00:00:00.0156298]: tx
-#                          - [00:00:00.0156298]: Should be closed automatically
+#                          - [00:00:00.0010003]: t2
+#                          - [00:00:00.0679968]: ttt1
+#                          - [00:00:00.0259872]: ttt2
+#                - [00:00:00.0370220]: tx
+#                          - [00:00:00.0270315]: Should be closed automatically
 # =======================================================
 # ```
 
-class TimeMeasurement {
+class JobStep {
     [string] $Name
     [DateTime] $Start
     [DateTime] $End
     [System.Collections.ArrayList] $Children
 
-    TimeMeasurement ([string] $Name) {
+    JobStep ([string] $Name) {
         $this.Name = $Name
         $this.Children = New-Object System.Collections.ArrayList
     }
@@ -76,54 +86,54 @@ class TimeMeasurement {
     }
 }
 
-class TimeLogger {
+class Job {
     [int] $CurrentIndentLevel
     [System.Collections.Stack] $Stack
-    [TimeMeasurement] $Root
+    [JobStep] $Root
 
-    TimeLogger () {
-        $this.Root = [TimeMeasurement]::new("Total")
+    Job ([string] $name = "Job") {
+        $this.Root = [JobStep]::new($name)
         $this.Root.Start = Get-Date
         $this.Stack = New-Object System.Collections.Stack
         $this.Stack.Push($this.Root)
         $this.CurrentIndentLevel = 0
     }
 
-    LogAndPush([string] $msg) {
+    PushStep([string] $msg) {
         Write-Host $msg
-        $this.Push($msg)
+        $this.PushQuiet($msg)
     }
 
-    Push([string] $msg) {
-        $tm = [TimeMeasurement]::new($msg)
+    PushQuiet([string] $msg) {
+        $tm = [JobStep]::new($msg)
         $tm.Start = Get-Date
         $top = $this.Stack.Peek()
         $top.Children.Add($tm)
         $this.Stack.Push($tm)
     }
 
-    Pop() {
+    PopStep() {
         $tm = $this.Stack.Pop()
         $tm.End = Get-Date
     }
 
-    LogAndMeasure([string] $msg, [scriptblock] $block) {
+    Step([string] $msg, [scriptblock] $block) {
         Write-Host $msg
-        $this.Measure($msg, $block)
+        $this.StepQuiet($msg, $block)
     }
 
-    Measure([string] $msg, [scriptblock] $block) {
-        $this.Push($msg)
+    StepQuiet([string] $msg, [scriptblock] $block) {
+        $this.PushStep($msg)
         $sb = [scriptblock]::Create($block)
         & $sb | ForEach-Object { Write-Host "$_" }
-        $this.Pop()
+        $this.PopStep()
     }
 
     Done() {
         Write-Host "=======================================================`n"
         Write-Host " Time measurement results: `n"
         while($this.Root -ne $this.Stack.Peek()) {
-            $this.Pop()
+            $this.PopStep()
         }
         $this.Root.End = Get-Date
         $this.Root.Print(5)
