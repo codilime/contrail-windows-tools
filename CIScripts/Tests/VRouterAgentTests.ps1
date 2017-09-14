@@ -234,9 +234,65 @@ function Test-VRouterAgentIntegration {
         Assert-IsOnlyOnePkt0Injected -Session $Session
     }
 
+    function Test-SingleComputeNodePing {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+        Write-Host "===> Running: Test-SingleComputeNodePing"
+
+        Write-Host "======> Given Docker Driver and Extension is running"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+
+        Write-Host "======> Given Agent is running"
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Test-IsVRouterAgentEnabled -Session $Session
+        Start-Sleep -Seconds 15
+
+        Write-Host "======> Given 2 containers belonging to the same network are running on a single compute node"
+        $NetworkName = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+        $Container1Name = "jolly_lumberjack"
+        $Container2Name = "juniper_tree"
+
+        $CreateContainer1Success = Invoke-Command -Session $Session -ScriptBlock {
+            & docker run -id --name $Using:Container1Name --network $Using:NetworkName microsoft/nanoserver powershell
+            $LASTEXITCODE
+        }
+        $CreateContainer2Success = Invoke-Command -Session $Session -ScriptBlock {
+            & docker run -id --name $Using:Container2Name --network $Using:NetworkName microsoft/nanoserver powershell
+            $LASTEXITCODE
+        }
+        if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+            throw "Container creation failed. EXPECTED: succeeded."
+        }
+        $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
+            $ContainerIP = docker exec $Using:Container2Name -Command {
+                [string] $ContainerIP = (Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address
+                return $ContainerIP
+            }
+            return $ContainerIP
+        }
+
+        Write-Host "======> When one container pings the other"
+        Write-Host "          Container $Container1Name is going to ping $Container2Name (IP: $Container2IP)."
+        $Success = Invoke-Command -Session $Session -ScriptBlock {
+            & docker exec $Using:Container1Name ping $Using:Container2IP -n 3 -w 500
+            $LASTEXITCODE
+        }
+
+        Write-Host "======> Then ping is answered"
+        if ($Success -ne 0) {
+            throw "Container $Container1Name couldn't ping $Container2Name."
+        }
+
+        Write-Host "===> PASSED: Test-SingleComputeNodePing"
+    }
+
     Test-InitialPkt0Injection -Session $Session -TestConfiguration $TestConfiguration
     Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session -TestConfiguration $TestConfiguration
     Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session -TestConfiguration $TestConfiguration
+    Test-SingleComputeNodePing -Session $Session -TestConfiguration $TestConfiguration
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
