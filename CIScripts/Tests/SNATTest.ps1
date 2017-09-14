@@ -110,7 +110,7 @@ function Test-SNAT {
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
             $Res = Invoke-Command -ScriptBlock {
-                $ErrorActionPreference = "SilentlyContinue"
+                $ErrorActionPreference = "Continue"
 
                 python "C:\Program Files\Juniper Networks\Agent\vrouter_hyperv.py" create `
                     --vm_location $Using:VmDirectory `
@@ -122,7 +122,7 @@ function Test-SNAT {
                     --forwarding-mac $Using:ForwardingMAC `
                     $Using:GUID `
                     $Using:GUID `
-                    $Using:GUID | Write-Host
+                    $Using:GUID 2>&1 | Write-Host
 
                 return $LASTEXITCODE
             }
