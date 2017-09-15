@@ -232,14 +232,11 @@ function Test-VRouterAgentIntegration {
     function Assert-Pkt0HasTraffic {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
+        Assert-IsPkt0Injected -Session $Session
+
         $pktIfIndex = Get-PktInterfaceIndexFromAgent -Session $Session
         $vifOutput = Invoke-Command -Session $Session -ScriptBlock {
             vif.exe --get $Using:pktIfIndex
-        }
-
-        $typeMatch = [regex]::Match($vifOutput, "Type:Agent")
-        if (!$typeMatch.Success) {
-            throw "pkt0 interface is not injected. EXPECTED: pkt0 injected in vRouter"
         }
 
         $rxPacketsMatch = [regex]::Match($vifOutput, "RX packets:(\d+)")
@@ -366,18 +363,34 @@ function Test-VRouterAgentIntegration {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
 
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-
         Write-Host "======> When Agent is started"
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
         Assert-AgentIsRunning -Session $Session
         Start-Sleep -Seconds 15  # Wait for KSync
 
-        Write-Host "======> Then Pkt0 is injected"
-        Assert-IsPkt0Injected -Session $Session
-
         Write-Host "======> Then Pkt0 has traffic"
         Assert-Pkt0HasTraffic -Session $Session
+
+        Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+    }
+
+    function Test-GatewayArpIsResolvedInAgent {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        Write-Host "===> Running: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
+
+        Write-Host "======> Given Extension is running"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Assert-ExtensionIsRunning -Session $Session -TestConfiguration $TestConfiguration
+
+        Write-Host "======> When Agent is started"
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Assert-AgentIsRunning -Session $Session
+        Start-Sleep -Seconds 15  # Wait for KSync
 
         Write-Host "======> Then Gateway ARP was resolved through Pkt0"
         Assert-IsGatewayArpResolvedInAgent -Session $Session
@@ -385,10 +398,11 @@ function Test-VRouterAgentIntegration {
         Write-Host "===> PASSED: Test-Pkt0ReceivesTrafficAfterAgentIsStarted"
     }
 
-    #Test-InitialPkt0Injection -Session $Session -TestConfiguration $TestConfiguration
-    #Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session -TestConfiguration $TestConfiguration
-    #Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session -TestConfiguration $TestConfiguration
+    Test-InitialPkt0Injection -Session $Session -TestConfiguration $TestConfiguration
+    Test-Pkt0RemainsInjectedAfterAgentStops -Session $Session -TestConfiguration $TestConfiguration
+    Test-OnePkt0ExistsAfterAgentIsRestarted -Session $Session -TestConfiguration $TestConfiguration
     Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session -TestConfiguration $TestConfiguration
+    Test-GatewayArpIsResolvedInAgent -Session $Session -TestConfiguration $TestConfiguration
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
