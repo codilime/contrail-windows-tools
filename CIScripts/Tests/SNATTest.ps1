@@ -127,7 +127,7 @@ function Test-SNAT {
                 return $LASTEXITCODE
             }
 
-            return $Res;
+            return $Res
         }
 
         if ($Res -ne 0) {
