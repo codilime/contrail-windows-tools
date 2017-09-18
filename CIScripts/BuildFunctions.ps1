@@ -141,7 +141,10 @@ function Invoke-ExtensionBuild {
 }
 
 function Invoke-AgentBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
+           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
+           [Parameter(Mandatory = $true)] [string] $CertPath,
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
     
     Write-Host "Copying Agent dependencies"
     Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
@@ -167,5 +170,10 @@ function Invoke-AgentBuild {
     if ($LASTEXITCODE -ne 0) {
         throw "Building Agent and tests failed"
     }
+    
+    $agentMSI = "build\debug\vnsw\agent\contrail\contrail-vrouter-agent.msi"
+    
+    Write-Host "Signing agentMSI"
+    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
 }
 
