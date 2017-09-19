@@ -1,10 +1,15 @@
 . $PSScriptRoot\InitializeCIScript.ps1
 
+# Source Job monitoring classes
+. $PSScriptRoot\Job.ps1
+$Job = [Job]::new("Test-integration")
+
 # Sourcing VM management functions
 . $PSScriptRoot\VMUtils.ps1
 
 # Setting all variables needed for New-TestbedVMs from Environment
 . $PSScriptRoot\SetCommonVariablesForNewVMsFromEnv.ps1
+
 
 # There are always 2 VMs created for running all tests
 $VMsNeeded = 2
@@ -72,10 +77,12 @@ Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfigurat
 Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
 Test-VRouterAgentIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
-
+Test-ComputeControllerIntegration -ComputeSession $Sessions[0] -TestConfiguration $TestConfiguration
 if($Env:RUN_DRIVER_TESTS -eq "1") {
     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
 }
 
 Write-Host "Removing VMs..."
 Remove-TestbedVMs -VMNames $VMNames -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+
+$Job.Done()
