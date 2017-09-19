@@ -160,6 +160,7 @@ function New-TestbedVMs {
 
         Invoke-Command -Session $Session -ScriptBlock {
             New-Item -ItemType Directory -Force C:\Artifacts | Out-Null
+            New-Item -ItemType Directory -Force C:\Artifacts\agent\tests\xmpp | Out-Null
         }
 
         Write-Host "Copying Docker driver installer"
@@ -176,6 +177,14 @@ function New-TestbedVMs {
             Copy-Item -ToSession $Session -Path "agent\$TestExecutable" -Destination C:\Artifacts\
         }
         Copy-Item -ToSession $Session -Path "agent\vnswa_cfg.ini" -Destination C:\Artifacts\
+
+        Write-Host "Copying Agent XMPP test executables"
+        $AgentXmppTestExecutables = Get-ChildItem .\agent\tests\xmpp | Where-Object {$_.Name -match '*.exe$'}
+        Foreach ($TestExecutable in $AgentXmppTestExecutables) {
+            $TextExecutablePath = "agent\tests\xmpp\$TestExecutable"
+            Write-Host "    Copying $TestExecutable"
+            Copy-Item -ToSession $Session -Path $TextExecutablePath -Destination C:\Artifacts\agent\tests\xmpp
+        }
 
         Write-Host "Copying vtest scenarios"
         Copy-Item -ToSession $Session -Path "vrouter\utils\vtest" -Destination C:\Artifacts\ -Recurse -Force
