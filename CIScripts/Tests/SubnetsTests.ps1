@@ -2,6 +2,54 @@ function Test-MultipleSubnetsSupport {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    function Join-ContainerNetworkNamePrefix {
+        Param ([Parameter(Mandatory = $true)] [string] $Tenant,
+               [Parameter(Mandatory = $true)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet)
+
+        $Prefix = "{0}:{1}:{2}" -f @("Contrail", $Tenant, $Network)
+
+        if ($Subnet) {
+            $Prefix = "{0}:{1}" -f @($Prefix, $Subnet)
+        }
+
+        return $Prefix
+    }
+
+    function Assert-NetworkExists {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [string] $Name,
+               [Parameter(Mandatory = $true)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet)
+
+        $Networks = Invoke-Command -Session $Session -ScriptBlock {
+            $Networks = $(docker network ls --filter 'driver=Contrail')
+            return $Networks[1..($Networks.length - 1)]
+        }
+
+        $Res = $Networks | Where-Object { $_.Split("", [System.StringSplitOptions]::RemoveEmptyEntries)[1] -eq $Name }
+        if (!$Res) {
+            throw "Network $Name not found in docker network list"
+        }
+
+        $Networks = Invoke-Command -Session $Session -ScriptBlock {
+            return $(Get-ContainerNetwork | Where-Object Mode -EQ "Transparent")
+        }
+
+        $ContainerNetworkPrefix = Join-ContainerNetworkNamePrefix `
+            -Tenant $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.TenantName -Network $Network -Subnet $Subnet
+
+        $Res = $Networks | Where-Object { $_.Name.StartsWith($ContainerNetworkPrefix) }
+        if (!$Res) {
+            throw "Network with prefix $ContainerNetworkPrefix not found in container network list"
+        }
+
+        if ($Subnet -and ($Res.SubnetPrefix -ne $Subnet)) {
+            throw "Invalid subnet: ${Res.SubnetPrefix}. Should be: $Subnet"
+        }
+    }
+
     function Test-SingleNetworkSingleSubnetDefault {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
