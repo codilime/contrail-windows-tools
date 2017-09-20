@@ -181,14 +181,32 @@ function Test-IsVRouterAgentEnabled {
 
 function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [TenantConfiguration] $TenantConfiguration)
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+           [Parameter(Mandatory = $false)] [string] $Name,
+           [Parameter(Mandatory = $false)] [string] $Network,
+           [Parameter(Mandatory = $false)] [string] $Subnet)
 
-    Write-Host "Creating network $($Configuration.DefaultNetworkName)"
+    $Configuration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
+    if (!$Name) {
+        $Name = $Configuration.DefaultNetworkName
+    }
+
+    if (!$Network) {
+        $Network = $Configuration.DefaultNetworkName
+    }
+
+    Write-Host "Creating network $Name"
 
     $NetworkID = Invoke-Command -Session $Session -ScriptBlock {
-        $TenantName = ($Using:TenantConfiguration).Name
-        $NetworkName = ($Using:TenantConfiguration).DefaultNetworkName
-        return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$NetworkName $NetworkName)
+        $TenantName = ($Using:Configuration).Name
+
+        if ($Using:Subnet) {
+            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$Using:Network --subnet $Using:Subnet $Using:Name)
+        }
+        else {
+            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$Using:Network $Using:Name)
+        }
     }
 
     return $NetworkID
@@ -206,7 +224,8 @@ function Remove-AllUnusedDockerNetworks {
 
 function Initialize-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+           [Parameter(Mandatory = $false)] [bool] $NoNetwork = $flase)
 
     Write-Host "Initializing Test Configuration"
 
@@ -237,7 +256,9 @@ function Initialize-TestConfiguration {
         throw "Docker driver was not enabled."
     }
 
-    New-DockerNetwork -Session $Session -TenantConfiguration $TestConfiguration.DockerDriverConfiguration.TenantConfiguration | Out-Null
+    if (!$NoNetwork) {
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration | Out-Null
+    }
 }
 
 function Clear-TestConfiguration {
@@ -320,4 +341,18 @@ function Initialize-ComputeServices {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
         Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+}
+
+function Remove-DockerNetwork {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+           [Parameter(Mandatory = $false)] [string] $Name)
+
+    if (!$Name) {
+        $Name = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+    }
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        docker network rm $Using:Name | Out-Null
+    }
 }
