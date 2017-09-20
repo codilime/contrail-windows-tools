@@ -112,6 +112,4 @@ function Test-MultipleSubnetsSupport {
 
     Test-SingleNetworkMultipleSubnetsAllSimultaneously -Session $Session -TestConfiguration $TestConfiguration
     Test-MultipleNetworksMultipleSubnetsAllSimultaneously -Session $Session -TestConfiguration $TestConfiguration
-
-    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 }
