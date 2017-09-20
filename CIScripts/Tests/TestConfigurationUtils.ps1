@@ -356,3 +356,29 @@ function Remove-DockerNetwork {
         docker network rm $Using:Name | Out-Null
     }
 }
+
+function New-Container {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+           [Parameter(Mandatory = $true)] [string] $NetworkName,
+           [Parameter(Mandatory = $false)] [string] $Name)
+
+    $ContainerID = Invoke-Command -Session $Session -ScriptBlock {
+        if ($Using:Name) {
+            return $(docker run --name $Using:Name --network $Using:NetworkName -id microsoft/nanoserver powershell)
+        }
+        else {
+            return $(docker run --network $Using:NetworkName -id microsoft/nanoserver powershell)
+        }
+    }
+
+    return $ContainerID
+}
+
+function Remove-Container {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+           [Parameter(Mandatory = $false)] [string] $NameOrId)
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        docker rm -f $Using:NameOrId
+    }
+}
