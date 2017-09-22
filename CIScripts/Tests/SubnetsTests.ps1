@@ -59,6 +59,40 @@ function Test-MultipleSubnetsSupport {
         return $(($BinIPAddress -band $BinNetmask) -eq ($BinNetworkIP -band $BinNetmask))
     }
 
+    function Assert-NetworkExistence {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [string] $Name,
+               [Parameter(Mandatory = $true)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet,
+               [Parameter(Mandatory = $true)] [bool] $ShouldExist)
+
+        $Networks = Invoke-Command -Session $Session -ScriptBlock {
+            $Networks = @($(docker network ls --filter 'driver=Contrail'))
+            return $Networks[1..($Networks.length - 1)]
+        }
+
+        $Res = $Networks | Where-Object { $_.Split("", [System.StringSplitOptions]::RemoveEmptyEntries)[1] -eq $Name }
+        if ($ShouldExist -and !$Res) {
+            throw "Network $Name not found in docker network list"
+        }
+        if (!$ShouldExist -and $Res) {
+            throw "Network $Name has been found in docker network list"
+        }
+
+        $Res = Get-SpecificTransparentContainerNetwork -Session $Session -TestConfiguration $TestConfiguration -Network $Network -Subnet $Subnet
+        if ($ShouldExist -and !$Res) {
+            throw "Network $Name not found in container network list"
+        }
+        if (!$ShouldExist -and $Res) {
+            throw "Network $Name has been found in container network list"
+        }
+
+        if ($ShouldExist -and $Subnet -and ($Res.SubnetPrefix -ne $Subnet)) {
+            throw "Invalid subnet: ${Res.SubnetPrefix}. Should be: $Subnet"
+        }
+    }
+
     function Assert-NetworkExists {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
@@ -66,24 +100,17 @@ function Test-MultipleSubnetsSupport {
                [Parameter(Mandatory = $true)] [string] $Network,
                [Parameter(Mandatory = $false)] [string] $Subnet)
 
-        $Networks = Invoke-Command -Session $Session -ScriptBlock {
-            $Networks = $(docker network ls --filter 'driver=Contrail')
-            return $Networks[1..($Networks.length - 1)]
-        }
+        Assert-NetworkExistence -Session $Session -TestConfiguration $TestConfiguration -Name $Name -Network $Network -Subnet $Subnet -ShouldExist:$true
+    }
 
-        $Res = $Networks | Where-Object { $_.Split("", [System.StringSplitOptions]::RemoveEmptyEntries)[1] -eq $Name }
-        if (!$Res) {
-            throw "Network $Name not found in docker network list"
-        }
+    function Assert-NetworkDoesNotExist {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [string] $Name,
+               [Parameter(Mandatory = $true)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet)
 
-        $Res = Get-SpecificTransparentContainerNetwork -Session $Session -TestConfiguration $TestConfiguration -Network $Network -Subnet $Subnet
-        if (!$Res) {
-            throw "Network $Name not found in container network list"
-        }
-
-        if ($Subnet -and ($Res.SubnetPrefix -ne $Subnet)) {
-            throw "Invalid subnet: ${Res.SubnetPrefix}. Should be: $Subnet"
-        }
+        Assert-NetworkExistence -Session $Session -TestConfiguration $TestConfiguration -Name $Name -Network $Network -Subnet $Subnet -ShouldExist:$false
     }
 
     function Assert-ContainerHasValidIPAddress {
@@ -107,6 +134,25 @@ function Test-MultipleSubnetsSupport {
         $Res = Test-IPAddressInSubnet -IPAddress $IPAddress -Subnet $Subnet
         if (!$Res) {
             throw "IP Address $IPAddress does not match subnet $Subnet"
+        }
+    }
+
+    function Assert-NetworkCannotBeCreated {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $false)] [string] $NetworkName,
+               [Parameter(Mandatory = $false)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet)
+
+        $NetworkCannotBeCreated = $false
+
+        try {
+            New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet | Out-Null
+        }
+        catch { $NetworkCannotBeCreated = $true }
+
+        if (!$NetworkCannotBeCreated) {
+            throw "Network $NetworkName has been created when it should not"
         }
     }
 
