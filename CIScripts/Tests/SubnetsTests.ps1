@@ -32,6 +32,33 @@ function Test-MultipleSubnetsSupport {
         return $($Networks | Where-Object { $_.Name.StartsWith($ContainerNetworkPrefix) })
     }
 
+    function Convert-IPAddressToBinary {
+        Param ([Parameter(Mandatory = $true)] [string] $IPAddress)
+
+        [uint32] $BinIPAddress = 0
+        $([uint32[]] $IPAddress.Split(".")).ForEach({ $BinIPAddress = ($BinIPAddress -shl 8) + $_ })
+
+        return $BinIPAddress
+    }
+
+    function Convert-SubnetToBinaryNetmask {
+        Param ([Parameter(Mandatory = $true)] [string] $SubnetLen)
+        return $((-bnot [uint32] 0) -shl (32 - $SubnetLen))
+    }
+
+    function Test-IPAddressInSubnet {
+        Param ([Parameter(Mandatory = $true)] [string] $IPAddress,
+               [Parameter(Mandatory = $true)] [string] $Subnet)
+
+        $NetworkIP, $SubnetLen = $Subnet.Split("/")
+
+        $BinIPAddress = Convert-IPAddressToBinary -IPAddress $IPAddress
+        $BinNetworkIP = Convert-IPAddressToBinary -IPAddress $NetworkIP
+        $BinNetmask = Convert-SubnetToBinaryNetmask -SubnetLen $SubnetLen
+
+        return $(($BinIPAddress -band $BinNetmask) -eq ($BinNetworkIP -band $BinNetmask))
+    }
+
     function Assert-NetworkExists {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
@@ -56,6 +83,30 @@ function Test-MultipleSubnetsSupport {
 
         if ($Subnet -and ($Res.SubnetPrefix -ne $Subnet)) {
             throw "Invalid subnet: ${Res.SubnetPrefix}. Should be: $Subnet"
+        }
+    }
+
+    function Assert-ContainerHasValidIPAddress {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [string] $ContainerName,
+               [Parameter(Mandatory = $true)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet)
+
+        $IPAddress = Invoke-Command -Session $Session -ScriptBlock {
+            return $(docker exec $Using:ContainerName powershell "(Get-NetIpAddress -AddressFamily IPv4 | Where-Object IPAddress -NE 127.0.0.1).IPAddress")
+        }
+        if (!$IPAddress) {
+            throw "IP Address not found"
+        }
+
+        if (!$Subnet) {
+            $Subnet = $(Get-SpecificTransparentContainerNetwork -Session $Session -TestConfiguration $TestConfiguration -Network $Network).SubnetPrefix
+        }
+
+        $Res = Test-IPAddressInSubnet -IPAddress $IPAddress -Subnet $Subnet
+        if (!$Res) {
+            throw "IP Address $IPAddress does not match subnet $Subnet"
         }
     }
 
