@@ -16,6 +16,22 @@ function Test-MultipleSubnetsSupport {
         return $Prefix
     }
 
+    function Get-SpecificTransparentContainerNetwork {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $true)] [string] $Network,
+               [Parameter(Mandatory = $false)] [string] $Subnet)
+
+        $Networks = Invoke-Command -Session $Session -ScriptBlock {
+            return $(Get-ContainerNetwork | Where-Object Mode -EQ "Transparent")
+        }
+
+        $ContainerNetworkPrefix = Join-ContainerNetworkNamePrefix `
+            -Tenant $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.TenantName -Network $Network -Subnet $Subnet
+
+        return $($Networks | Where-Object { $_.Name.StartsWith($ContainerNetworkPrefix) })
+    }
+
     function Assert-NetworkExists {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
@@ -33,16 +49,9 @@ function Test-MultipleSubnetsSupport {
             throw "Network $Name not found in docker network list"
         }
 
-        $Networks = Invoke-Command -Session $Session -ScriptBlock {
-            return $(Get-ContainerNetwork | Where-Object Mode -EQ "Transparent")
-        }
-
-        $ContainerNetworkPrefix = Join-ContainerNetworkNamePrefix `
-            -Tenant $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.TenantName -Network $Network -Subnet $Subnet
-
-        $Res = $Networks | Where-Object { $_.Name.StartsWith($ContainerNetworkPrefix) }
+        $Res = Get-SpecificTransparentContainerNetwork -Session $Session -TestConfiguration $TestConfiguration -Network $Network -Subnet $Subnet
         if (!$Res) {
-            throw "Network with prefix $ContainerNetworkPrefix not found in container network list"
+            throw "Network $Name not found in container network list"
         }
 
         if ($Subnet -and ($Res.SubnetPrefix -ne $Subnet)) {
