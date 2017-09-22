@@ -161,6 +161,7 @@ function Test-AgentService {
         Write-Host "======> Given Agent is installed"
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
 
         Write-Host "======> When Agent is uninstalled"
@@ -181,6 +182,7 @@ function Test-AgentService {
         Write-Host "======> Given Agent is installed"
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
 
         Write-Host "======> When Agent is enabled"
@@ -202,6 +204,7 @@ function Test-AgentService {
         Write-Host "======> Given Agent is installed"
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
 
         Write-Host "======> When Agent is disabled"
@@ -214,8 +217,8 @@ function Test-AgentService {
         Write-Host "===> PASSED: Test-AgentServiceDisabling"
     }
 
-    #Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
-    #Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
+    Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
+    Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceEnabling -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
