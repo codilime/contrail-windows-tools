@@ -52,7 +52,7 @@ function Test-AgentService {
         }
     }
 
-    function Test-isAgentServiceRegistered {
+    function Test-IsAgentServiceRegistered {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         $Service = Invoke-Command -Session $Session -ScriptBlock {
@@ -63,7 +63,7 @@ function Test-AgentService {
     function Assert-IsAgentServiceRegistered {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-        $Res = Test-isAgentServiceRegistered -Session $Session
+        $Res = Test-IsAgentServiceRegistered -Session $Session
         if (!$Res) {
             throw "Agent service is not registered. EXPECTED: Agent service registered"
         }
@@ -72,7 +72,7 @@ function Test-AgentService {
     function Assert-IsAgentServiceUnregistered {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-        $Res = Test-isAgentServiceRegistered -Session $Session
+        $Res = Test-IsAgentServiceRegistered -Session $Session
         if ($Res) {
             throw "Agent service is registered. EXPECTED: Agent service unregistered"
         }
@@ -214,7 +214,7 @@ function Test-AgentService {
         Write-Host "===> PASSED: Test-AgentServiceDisabling"
     }
 
-    Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
+    #Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     #Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceEnabling -Session $Session -TestConfiguration $TestConfiguration
