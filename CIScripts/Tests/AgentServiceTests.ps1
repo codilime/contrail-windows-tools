@@ -2,7 +2,7 @@ function Test-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 30
+    $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 300
 
     #
     # Private functions of Test-AgentService
