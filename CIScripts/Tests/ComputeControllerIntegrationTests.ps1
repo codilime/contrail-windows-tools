@@ -20,7 +20,11 @@ function Test-ComputeControllerIntegration {
 
     function Get-PSIPAddress {
         Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-        return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress | Where-Object InterfaceAlias -like "Ethernet0*" | Where-Object AddressFamily -eq IPv4 | Select-Object -ExpandProperty IPAddress }
+        return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
+            Where-Object InterfaceAlias -like "Ethernet0*" |
+            Where-Object AddressFamily -eq IPv4 |
+            Select-Object -ExpandProperty IPAddress
+        }
     }
 
     function Connect-ToController {
