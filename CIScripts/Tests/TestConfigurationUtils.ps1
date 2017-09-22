@@ -379,6 +379,6 @@ function Remove-Container {
            [Parameter(Mandatory = $false)] [string] $NameOrId)
 
     Invoke-Command -Session $Session -ScriptBlock {
-        docker rm -f $Using:NameOrId
+        docker rm -f $Using:NameOrId | Out-Null
     }
 }
