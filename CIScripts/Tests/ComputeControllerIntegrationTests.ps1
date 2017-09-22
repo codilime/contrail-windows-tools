@@ -13,12 +13,6 @@ function Test-ComputeControllerIntegration {
     # Private functions
     #
 
-    function Get-SSHHostname {
-        Param([Parameter(Mandatory = $true)] [SSH.SshSession] $Session)
-        $Result = Invoke-SSHCommand -Session $Session.SessionId -Command "hostname"
-        return $Result.Output
-    }
-
     function Get-PSHostname {
         Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
         return Invoke-Command -Session $Session -ScriptBlock { hostname }
@@ -69,16 +63,6 @@ function Test-ComputeControllerIntegration {
             return $true
         }
         return $false
-    }
-
-    function Test-ComputeInCassandra {
-        Param ([Parameter(Mandatory = $true)] [string] $ComputeHostname,
-               [Parameter(Mandatory = $true)] [SSH.SshSession] $DiscoverySession)
-        $Hostname = Get-SSHHostname -Session $DiscoverySession
-        $Query = 'select column1,column2 from \"DISCOVERY_SERVER\".discovery;'
-        $Cmd = "cqlsh $Hostname -u cassandra -p cassandra -e `" $Query `" | grep $ComputeHostname"
-        $Result = Invoke-SSHCommand -Session $DiscoverySession.SessionId -Command $Cmd
-        return ($Result.Output -ne "")
     }
 
     function Assert-ComputeInDnsAgentList {
@@ -132,24 +116,6 @@ function Test-ComputeControllerIntegration {
 
         if(Test-ComputeInShowCollectorServer -CollectorIP $CollectorIP -ComputeHostname $ComputeHostname) {
             throw "$ComputeIP found in ShowCollectorServer! EXPECTED: it's not in ShowCollectorServer."
-        }
-    }
-
-    function Assert-ComputeInCassandra {
-        Param ([Parameter(Mandatory = $true)] [string] $ComputeHostname,
-               [Parameter(Mandatory = $true)] [SSH.SshSession] $DiscoverySession)
-
-        if(!(Test-ComputeInCassandra -ComputeHostname $ComputeHostname -DiscoverySession $DiscoverySession)) {
-            throw "$ComputeHostname not found anywhere in Cassandra! EXPECTED: it's in Cassandra."
-        }
-    }
-
-    function Assert-ComputeNotInCassandra {
-        Param ([Parameter(Mandatory = $true)] [string] $ComputeHostname,
-               [Parameter(Mandatory = $true)] [SSH.SshSession] $DiscoverySession)
-
-        if(Test-ComputeInCassandra -ComputeHostname $ComputeHostname -DiscoverySession $DiscoverySession) {
-            throw "$ComputeHostname found in Cassandra! EXPECTED: it's not in Cassandra."
         }
     }
 
@@ -220,34 +186,11 @@ function Test-ComputeControllerIntegration {
         })
     }
 
-    function Test-ComputeNodeAppearsInDiscovery {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-
-        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
-            Write-Host "===> Running: Test-ComputeNodeAppearsInDiscovery"
-            $ComputeHostname = Get-PSHostname -Session $Session
-            $ControllerSession = Connect-ToController -Username $TestConfiguration.ControllerHostUsername -Password $TestConfiguration.ControllerHostPassword -IP $TestConfiguration.ControllerIP
-            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-
-            Write-Host "======> Given our compute node is not in Cassandra"
-            Assert-ComputeNotInCassandra -ComputeHostname $ComputeHostname -DiscoverySession $ControllerSession
-
-            Write-Host "======> When all compute services are started"
-            Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
-
-            Write-Host "======> Then our compute node appears in Cassandra after a while"
-            Start-Sleep -Seconds $WAIT_TIME_SEC
-            Assert-ComputeInCassandra -ComputeHostname $ComputeHostname -DiscoverySession $ControllerSession
-        })
-    }
-
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         
         Test-ComputeNodeAppearsInDnsAgentList -Session $Session -TestConfiguration $TestConfiguration
         Test-ComputeNodeAppearsInXMPPDnsData -Session $Session -TestConfiguration $TestConfiguration
         Test-ComputeNodeAppearsInShowCollectorServer -Session $Session -TestConfiguration $TestConfiguration
-        Test-ComputeNodeAppearsInDiscovery -Session $Session -TestConfiguration $TestConfiguration
 
         # Test cleanup
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
