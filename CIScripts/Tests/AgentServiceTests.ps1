@@ -2,8 +2,6 @@ function Test-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    . $PSScriptRoot\VRouterAgentTests.ps1
-    
     $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 45
 
     #
@@ -220,7 +218,7 @@ function Test-AgentService {
         Write-Host "===> PASSED: Test-AgentServiceDisabling"
     }
 
-    New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+    #New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
     Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
