@@ -34,17 +34,17 @@ $Sessions.ForEach({ Write-Host $_.ComputerName })
 
 $SingleSubnetNetworkConfiguration = [NetworkConfiguration] @{
     Name = $Env:SINGLE_SUBNET_NETWORK_NAME
-    Subnets = @($Env:SINGLE_SUBNET_SUBNET1)
+    Subnets = @($Env:SINGLE_SUBNET_NETWORK_SUBNET)
 }
 
 $MultipleSubnetsNetworkConfiguration = [NetworkConfiguration] @{
     Name = $Env:MULTIPLE_SUBNETS_NETWORK_NAME
-    Subnets = @($Env:MULTIPLE_SUBNETS_SUBNET1, $Env:MULTIPLE_SUBNETS_SUBNET2)
+    Subnets = @($Env:MULTIPLE_SUBNETS_NETWORK_SUBNET1, $Env:MULTIPLE_SUBNETS_NETWORK_SUBNET2)
 }
 
 $TenantConfiguration = [TenantConfiguration] @{
     Name = $Env:DOCKER_NETWORK_TENANT_NAME;
-    DefaultNetworkName = $Env:DOCKER_NETWORK_NAME; # TODO: chnage
+    DefaultNetworkName = $SingleSubnetNetworkConfiguration.Name;
     SingleSubnetNetwork = $SingleSubnetNetworkConfiguration;
     MultipleSubnetsNetwork = $MultipleSubnetsNetworkConfiguration;
 }
