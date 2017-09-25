@@ -162,7 +162,29 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkSingleSubnetDefault"
 
-        # TODO: Implement
+        $ContainerName = "SingleNetworkSingleSubnetDefaultTest"
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.SingleSubnetNetwork.Name;
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> When network is created"
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network | Out-Null
+
+        Write-Host "======> When container is started"
+        New-Container -Session $Session -Name $ContainerName -NetworkName $NetworkName | Out-Null
+
+        Write-Host "======> Then valid network exists"
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network
+
+        Write-Host "======> Then container has valid IP address"
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerName -Network $Network
+
+        Write-Host "======> Cleanup"
+        Remove-Container -Session $Session -Name $ContainerName
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkSingleSubnetDefault"
     }
@@ -173,7 +195,30 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkSingleSubnetExplicit"
 
-        # TODO: Implement
+        $ContainerName = "SingleNetworkSingleSubnetExplicitTest"
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.SingleSubnetNetwork.Name;
+        $Subnet = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.SingleSubnetNetwork.Subnets[0];
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> When network is created"
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet | Out-Null
+
+        Write-Host "======> When container is started"
+        New-Container -Session $Session -Name $ContainerName -NetworkName $NetworkName | Out-Null
+
+        Write-Host "======> Then valid network exists"
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Then container has valid IP address"
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Cleanup"
+        Remove-Container -Session $Session -Name $ContainerName
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkSingleSubnetExplicit"
     }
@@ -184,7 +229,21 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkSingleSubnetInvalid"
 
-        # TODO: Implement
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.SingleSubnetNetwork.Name;
+        $Subnet = "11.12.13.0/24" # Invalid subnet
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> Then network with invalid subnet cannot be created"
+        Assert-NetworkCannotBeCreated -Session $Session -TestConfiguration $TestConfiguration -NetworkName $NetworkName -Network $Network -Subnet $Subnet | Out-Null
+
+        Write-Host "======> Then network should not exist"
+        Assert-NetworkDoesNotExist -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Cleanup"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkSingleSubnetInvalid"
     }
@@ -195,7 +254,20 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkMultipleSubnetsDefault"
 
-        # TODO: Implement
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Name;
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> Then network with invalid subnet cannot be created"
+        Assert-NetworkCannotBeCreated -Session $Session -TestConfiguration $TestConfiguration -NetworkName $NetworkName -Network $Network | Out-Null
+
+        Write-Host "======> Then network should not exist"
+        Assert-NetworkDoesNotExist -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network
+
+        Write-Host "======> Cleanup"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkMultipleSubnetsDefault"
     }
@@ -206,7 +278,30 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkMultipleSubnetsExplicitFirst"
 
-        # TODO: Implement
+        $ContainerName = "SingleNetworkMultipleSubnetsExplicitFirstTest"
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Name
+        $Subnet = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Subnets[0]
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> When network is created"
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet | Out-Null
+
+        Write-Host "======> When container is started"
+        New-Container -Session $Session -Name $ContainerName -NetworkName $NetworkName | Out-Null
+
+        Write-Host "======> Then valid network exists"
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Then container has valid IP address"
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Cleanup"
+        Remove-Container -Session $Session -Name $ContainerName
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkMultipleSubnetsExplicitFirst"
     }
@@ -217,7 +312,30 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkMultipleSubnetsExplicitSecond"
 
-        # TODO: Implement
+        $ContainerName = "SingleNetworkMultipleSubnetsExplicitSecondTest"
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Name
+        $Subnet = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Subnets[1]
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> When network is created"
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet | Out-Null
+
+        Write-Host "======> When container is started"
+        New-Container -Session $Session -Name $ContainerName -NetworkName $NetworkName | Out-Null
+
+        Write-Host "======> Then valid network exists"
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Then container has valid IP address"
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Cleanup"
+        Remove-Container -Session $Session -Name $ContainerName
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkMultipleSubnetsExplicitSecond"
     }
@@ -228,20 +346,23 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-SingleNetworkMultipleSubnetsInvalid"
 
-        # TODO: Implement
+        $NetworkName = "Testnet"
+        $Network = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Name
+        $Subnet = "192.168.10.0/24" # Invalid subnet
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> Then network with invalid subnet cannot be created"
+        Assert-NetworkCannotBeCreated -Session $Session -TestConfiguration $TestConfiguration -NetworkName $NetworkName -Network $Network -Subnet $Subnet | Out-Null
+
+        Write-Host "======> Then network should not exist"
+        Assert-NetworkDoesNotExist -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkName -Network $Network -Subnet $Subnet
+
+        Write-Host "======> Cleanup"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-SingleNetworkMultipleSubnetsInvalid"
-    }
-
-    function Test-SingleNetworkMultipleSubnetsAllSimultaneously {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-
-        Write-Host "===> Running: Test-SingleNetworkMultipleSubnetsAllSimultaneously"
-
-        # TODO: Implement
-
-        Write-Host "===> PASSED: Test-SingleNetworkMultipleSubnetsAllSimultaneously"
     }
 
     function Test-MultipleNetworksMultipleSubnetsAllSimultaneously {
@@ -250,7 +371,51 @@ function Test-MultipleSubnetsSupport {
 
         Write-Host "===> Running: Test-MultipleNetworksMultipleSubnetsAllSimultaneously"
 
-        # TODO: Implement
+        $ContainerNameSingle = "TestS"
+        $ContainerNameMultiple1 = "TestM1"
+        $ContainerNameMultiple2 = "TestM2"
+
+        $NetworkNameSingle = "TestnetSingle"
+        $NetworkNameMultiple1 = "TestnetMulti1"
+        $NetworkNameMultiple2 = "TestnetMulti2"
+
+        $NetworkSingle = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.SingleSubnetNetwork.Name
+        $NetworkMultiple = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Name
+
+        $SubnetMultiple1 = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Subnets[0]
+        $SubnetMultiple2 = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.MultipleSubnetsNetwork.Subnets[1]
+
+        Write-Host "======> Given Docker Driver is running"
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
+
+        Write-Host "======> When networks are created"
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameSingle -Network $NetworkSingle | Out-Null
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameMultiple1 -Network $NetworkMultiple -Subnet $SubnetMultiple1 | Out-Null
+        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameMultiple2 -Network $NetworkMultiple -Subnet $SubnetMultiple2 | Out-Null
+
+        Write-Host "======> When containers are started"
+        New-Container -Session $Session -Name $ContainerNameSingle -NetworkName $NetworkNameSingle | Out-Null
+        New-Container -Session $Session -Name $ContainerNameMultiple1 -NetworkName $NetworkNameMultiple1 | Out-Null
+        New-Container -Session $Session -Name $ContainerNameMultiple2 -NetworkName $NetworkNameMultiple2 | Out-Null
+
+        Write-Host "======> Then valid network exists"
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameSingle -Network $NetworkSingle
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameMultiple1 -Network $NetworkMultiple -Subnet $SubnetMultiple1
+        Assert-NetworkExists -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameMultiple2 -Network $NetworkMultiple -Subnet $SubnetMultiple2
+
+        Write-Host "======> Then containers have valid IP addresses"
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerNameSingle -Network $NetworkSingle
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerNameMultiple1 -Network $NetworkMultiple -Subnet $SubnetMultiple1
+        Assert-ContainerHasValidIPAddress -Session $Session -TestConfiguration $TestConfiguration -ContainerName $ContainerNameMultiple2 -Network $NetworkMultiple -Subnet $SubnetMultiple2
+
+        Write-Host "======> Cleanup"
+        Remove-Container -Session $Session -Name $ContainerNameSingle
+        Remove-Container -Session $Session -Name $ContainerNameMultiple1
+        Remove-Container -Session $Session -Name $ContainerNameMultiple2
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameSingle
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameMultiple1
+        Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $NetworkNameMultiple2
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "===> PASSED: Test-MultipleNetworksMultipleSubnetsAllSimultaneously"
     }
@@ -264,6 +429,5 @@ function Test-MultipleSubnetsSupport {
     Test-SingleNetworkMultipleSubnetsExplicitSecond -Session $Session -TestConfiguration $TestConfiguration
     Test-SingleNetworkMultipleSubnetsInvalid -Session $Session -TestConfiguration $TestConfiguration
 
-    Test-SingleNetworkMultipleSubnetsAllSimultaneously -Session $Session -TestConfiguration $TestConfiguration
     Test-MultipleNetworksMultipleSubnetsAllSimultaneously -Session $Session -TestConfiguration $TestConfiguration
 }
