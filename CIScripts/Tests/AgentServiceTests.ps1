@@ -218,8 +218,8 @@ function Test-AgentService {
         Write-Host "===> PASSED: Test-AgentServiceDisabling"
     }
 
-    New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration
-    
+    New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+
     Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
