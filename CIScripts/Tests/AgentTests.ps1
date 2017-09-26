@@ -16,12 +16,18 @@ $DefineTestIfGTestOutputSuggestsThatAllTestsHavePassed = {
 
 function Run-Test {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [String] $TestExecutable)
+           [Parameter(Mandatory = $true)] [String] $TestExecutable,
+           [Parameter(Mandatory = $false)] [bool] $UseConfig = $true)
     Write-Host -NoNewline "===> Agent tests: running $TestExecutable... "
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         $Res = Invoke-Command -ScriptBlock {
             $ErrorActionPreference = "SilentlyContinue"
-            $TestOutput = Invoke-Expression "C:\Artifacts\$using:TestExecutable --config C:\Artifacts\vnswa_cfg.ini"
+            $TestExecutableCommand = "C:\Artifacts\$using:TestExecutable"
+            if ($Using:UseConfig) {
+                $TestExecutableCommand = "$TestExecutableCommand --config C:\Artifacts\vnswa_cfg.ini"
+            }
+
+            $TestOutput = Invoke-Expression $TestExecutableCommand
 
             # This is a workaround for the following bug:
             # https://bugs.launchpad.net/opencontrail/+bug/1714205
@@ -69,7 +75,7 @@ function Test-Agent {
     $AgentTextExecutables = Get-ChildItem .\output\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
     
     Foreach ($TestExecutable in $AgentTextExecutables) {
-        $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutable
+        $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutable -UseConfig $false
         if ($TestRes -ne 0) {
             $Res = 1
         }
@@ -81,5 +87,35 @@ function Test-Agent {
         Write-Host "===> Agent tests: all tests succeeded."
     } else {
         Throw "===> Agent tests: some tests failed."
+    }
+}
+
+function Test-AgentXmpp {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+    Write-Host "===> Agent XMPP tests: setting up an environment."
+
+    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+    Invoke-Command -Session $Session -ScriptBlock $DefineTestIfGTestOutputSuggestsThatAllTestsHavePassed
+
+    $Res = 0;
+    $AgentTextExecutables = Get-ChildItem .\output\agent\tests\xmpp | Where-Object {$_.Name -match '*.exe$'}
+    Foreach ($TestExecutable in $AgentTextExecutables) {
+        $TestExecutablePath = "agent\tests\xmpp\$TestExecutable"
+        $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutablePath
+        if ($TestRes -ne 0) {
+            $Res = 1
+        }
+    }
+
+    Write-Host "===> Agent XMPP tests: environment clean up"
+    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration | Out-Null
+    Write-Host "===> Agent XMPP tests: environment has been cleaned up."
+
+    if ($Res -eq 0) {
+        Write-Host "===> Agent XMPP tests: all tests succeeded."
+    } else {
+        Throw "===> Agent XMPP tests: some tests failed."
     }
 }
