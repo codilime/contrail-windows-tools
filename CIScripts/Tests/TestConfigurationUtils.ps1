@@ -225,7 +225,7 @@ function Remove-AllUnusedDockerNetworks {
 function Initialize-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter(Mandatory = $false)] [bool] $NoNetwork = $flase)
+           [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false)
 
     Write-Host "Initializing Test Configuration"
 
