@@ -349,7 +349,7 @@ function Remove-DockerNetwork {
            [Parameter(Mandatory = $false)] [string] $Name)
 
     if (!$Name) {
-        $Name = $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.NetworkName
+        $Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
     }
 
     Invoke-Command -Session $Session -ScriptBlock {
