@@ -27,7 +27,7 @@ function Test-MultipleSubnetsSupport {
         }
 
         $ContainerNetworkPrefix = Join-ContainerNetworkNamePrefix `
-            -Tenant $TestConfiguration.DockerDriverConfiguration.NetworkConfiguration.TenantName -Network $Network -Subnet $Subnet
+            -Tenant $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.Name -Network $Network -Subnet $Subnet
 
         return $($Networks | Where-Object { $_.Name.StartsWith($ContainerNetworkPrefix) })
     }
