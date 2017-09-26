@@ -40,7 +40,7 @@ function Test-AgentService {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
-            Start-Service ContrailAgent #| Out-Null
+            Start-Service ContrailAgent | Out-Null
         }
     }
 
@@ -48,7 +48,7 @@ function Test-AgentService {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
-            Stop-Service ContrailAgent #| Out-Null
+            Stop-Service ContrailAgent | Out-Null
         }
     }
 
@@ -56,10 +56,10 @@ function Test-AgentService {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         $Service = Invoke-Command -Session $Session -ScriptBlock {
-            return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
+            return $(if (Get-Service "ContrailAgent" -ErrorAction SilentlyContinue) { $true } else { $false }) 
         }
         Write-Host $Service
-        return $(if ($Service) { $true } else { $false })        
+        return $Service        
     }
     function Assert-IsAgentServiceRegistered {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
