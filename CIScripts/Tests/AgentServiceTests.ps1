@@ -2,7 +2,7 @@ function Test-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 45
+    $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 30
 
     #
     # Private functions of Test-AgentService
@@ -220,6 +220,9 @@ function Test-AgentService {
 
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
     Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+    
+    New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+
     Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
     Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
