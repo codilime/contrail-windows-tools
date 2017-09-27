@@ -7,7 +7,7 @@ function Test-AgentService {
 
     $AgentServiceTestsTimeTracker = [Job]::new("Test-AgentService")
 
-    $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 30
+    $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 60
 
     #
     # Private functions of Test-AgentService
