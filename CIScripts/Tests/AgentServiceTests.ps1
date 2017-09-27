@@ -3,6 +3,9 @@ function Test-AgentService {
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\Job.ps1
+
+    $AgentServiceTestsTimeTracker = [Job]::new("Test-AgentService")
 
     $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 30
 
@@ -60,7 +63,6 @@ function Test-AgentService {
         $Service = Invoke-Command -Session $Session -ScriptBlock {
             return $(if (Get-Service "ContrailAgent" -ErrorAction SilentlyContinue) { $true } else { $false }) 
         }
-        Write-Host $Service
         return $Service        
     }
     function Assert-IsAgentServiceRegistered {
@@ -227,11 +229,21 @@ function Test-AgentService {
 
     New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
-    Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
-    Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
-    Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
-    Test-AgentServiceEnabling -Session $Session -TestConfiguration $TestConfiguration
-    Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceIsRegisteredAfterInstall", {
+        Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
+    })
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceIsDisabledAfterInstall", {
+        Test-AgentServiceIsDisabledAfterInstall -Session $Session -TestConfiguration $TestConfiguration
+    })
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceIsUnregisteredAfterUninstall", {
+        Test-AgentServiceIsUnregisteredAfterUninstall -Session $Session -TestConfiguration $TestConfiguration
+    })
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceEnabling", {
+        Test-AgentServiceEnabling -Session $Session -TestConfiguration $TestConfiguration
+    })
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceDisabling", {
+        Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
+    })
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
