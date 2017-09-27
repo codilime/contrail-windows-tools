@@ -2,6 +2,8 @@ function Test-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\CommonTestCode.ps1
+    
     $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 30
 
     #
@@ -220,7 +222,7 @@ function Test-AgentService {
 
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
     Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-    
+
     New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
     Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
