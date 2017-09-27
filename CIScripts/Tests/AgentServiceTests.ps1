@@ -3,7 +3,7 @@ function Test-AgentService {
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\CommonTestCode.ps1
-    
+
     $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS = 30
 
     #
@@ -190,6 +190,7 @@ function Test-AgentService {
 
         Write-Host "======> When Agent is enabled"
         Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
 
         Write-Host "======> Then Agent state is equal to ENABLE after a while"
         Start-Sleep -s $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS
@@ -212,6 +213,7 @@ function Test-AgentService {
 
         Write-Host "======> When Agent is disabled"
         Disable-AgentService -Session $Session
+        Assert-IsAgentServiceDisabled -Session $Session
 
         Write-Host "======> Then Agent state is equal to DISABLE after a while"
         Start-Sleep -s $WAIT_TIME_FOR_AGENT_SERVICE_IN_SECONDS
