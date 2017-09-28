@@ -122,8 +122,8 @@ function Test-AgentService {
         Write-Host "===> Running: Test-AgentServiceIsRegisteredAfterInstall"
 
         Write-Host "======> Given clean environment"
-        #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Uninstall-Agent -Session $Session
         Assert-IsAgentServiceUnregistered -Session $Session
 
@@ -143,8 +143,8 @@ function Test-AgentService {
         Write-Host "===> Running: Test-AgentServiceIsDisabledAfterInstall"
 
         Write-Host "======> Given clean environment"
-        #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Uninstall-Agent -Session $Session
         Assert-IsAgentServiceUnregistered -Session $Session
 
@@ -164,8 +164,8 @@ function Test-AgentService {
         Write-Host "===> Running: Test-AgentServiceIsUnregisteredAfterUninstall"
 
         Write-Host "======> Given Agent is installed"
-        #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
 
@@ -185,10 +185,12 @@ function Test-AgentService {
         Write-Host "===> Running: Test-AgentServiceEnabling"
 
         Write-Host "======> Given Agent is installed"
-        #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
+
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "======> When Agent is enabled"
         Enable-AgentService -Session $Session
@@ -208,12 +210,14 @@ function Test-AgentService {
         Write-Host "===> Running: Test-AgentServiceDisabling"
 
         Write-Host "======> Given Agent is installed and enabled"
-        #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
         Enable-AgentService -Session $Session
         Assert-IsAgentServiceEnabled -Session $Session
+
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
         Write-Host "======> When Agent is disabled"
         Disable-AgentService -Session $Session
@@ -226,10 +230,6 @@ function Test-AgentService {
         Write-Host "===> PASSED: Test-AgentServiceDisabling"
     }
 
-    Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-    Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-
-    New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
 
     $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceIsRegisteredAfterInstall", {
         Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
