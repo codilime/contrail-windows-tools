@@ -214,10 +214,11 @@ function Test-AgentService {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Install-Agent -Session $Session
         Assert-IsAgentServiceRegistered -Session $Session
-        Enable-AgentService -Session $Session
-        Assert-IsAgentServiceEnabled -Session $Session
 
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
 
         Write-Host "======> When Agent is disabled"
         Disable-AgentService -Session $Session
