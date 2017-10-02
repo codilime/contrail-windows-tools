@@ -67,6 +67,7 @@ function Test-AgentService {
         }
         return $Service        
     }
+    
     function Assert-IsAgentServiceRegistered {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
@@ -252,4 +253,6 @@ function Test-AgentService {
 
     # Test cleanup
     Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+
+    $AgentServiceTestsTimeTracker.Done()
 }
