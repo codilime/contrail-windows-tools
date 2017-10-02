@@ -3,13 +3,13 @@
 # By default relevant environment variables are created in Setup-EnvVars.ps1.
 # Example usage can be seen in Setup-SimpleTestEnv.ps1.
 
-function Stop-ProcessIfExists {
-    Param ([Parameter(Mandatory = $true)] [string] $ProcessName)
-    $Proc = Get-Process $ProcessName -ErrorAction SilentlyContinue
-    if ($Proc) {
-        $Proc | Stop-Process -Force
-    }
-}
+# function Stop-ProcessIfExists {
+#     Param ([Parameter(Mandatory = $true)] [string] $ProcessName)
+#     $Proc = Get-Process $ProcessName -ErrorAction SilentlyContinue
+#     if ($Proc) {
+#         $Proc | Stop-Process -Force
+#     }
+# }
 
 function Test-IsProcessRunning {
     Param ([Parameter(Mandatory = $true)] [string] $ProcessName)
@@ -283,7 +283,7 @@ function Remove-DockerNetworkAccordingToEnv {
 # Relies on environment variable: AgentExecutableName.
 function Stop-Agent {
     Write-Host "Stopping agent..."
-    Stop-ProcessIfExists $Env:AgentExecutableName
+    Stop-Service ContrailAgent | Out-Null
 }
 
 # Sets up an environment consisting of:

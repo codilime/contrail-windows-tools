@@ -148,35 +148,81 @@ function Test-IsDockerDriverEnabled {
     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
 }
 
-function Enable-VRouterAgent {
-    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [string] $ConfigFilePath)
+# function Enable-VRouterAgent {
+#     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+#            [Parameter(Mandatory = $true)] [string] $ConfigFilePath)
 
-    Write-Host "Enabling Agent"
+#     Write-Host "Enabling Agent"
+
+#     Invoke-Command -Session $Session -ScriptBlock {
+#         $ConfigFilePath = $Using:ConfigFilePath
+
+#         Start-Job -ScriptBlock {
+#             Param ($ConfigFilePath)
+
+#             & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $ConfigFilePath
+#         } -ArgumentList $ConfigFilePath | Out-Null
+#     }
+# }
+
+# function Disable-VRouterAgent {
+#     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+#     Write-Host "Disabling Agent"
+
+#     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
+# }
+
+# function Test-IsVRouterAgentEnabled {
+#     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+#     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-vrouter-agent"
+# }
+
+function Enable-AgentService {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
     Invoke-Command -Session $Session -ScriptBlock {
-        $ConfigFilePath = $Using:ConfigFilePath
-
-        Start-Job -ScriptBlock {
-            Param ($ConfigFilePath)
-
-            & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $ConfigFilePath
-        } -ArgumentList $ConfigFilePath | Out-Null
+        Write-Host "Starting Agent"
+        Start-Service ContrailAgent | Out-Null
     }
 }
 
-function Disable-VRouterAgent {
+function Disable-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    Write-Host "Disabling Agent"
-
-    Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
+    Invoke-Command -Session $Session -ScriptBlock {
+        Write-Host "Stoping Agent"
+        Stop-Service ContrailAgent | Out-Null
+    }
 }
 
-function Test-IsVRouterAgentEnabled {
+function Assert-IsAgentServiceEnabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    return Test-IsProcessRunning -Session $Session -ProcessName "contrail-vrouter-agent"
+    $Service = Invoke-Command -Session $Session -ScriptBlock {
+        return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
+    }
+    if (!$Service) {
+        throw "Agent service is not registered. EXPECTED: Agent service registered"
+    }
+    if ($Service.Status -eq "Stopped") {
+        throw "Agent service is stopped. EXPECTED: Agent service running"
+    }
+}
+
+function Assert-IsAgentServiceDisabled {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    $Service = Invoke-Command -Session $Session -ScriptBlock {
+        return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
+    }
+    if (!$Service) {
+        throw "Agent service is not registered. EXPECTED: Agent service registered"
+    }
+    if ($Service.Status -eq "Running") {
+        throw "Agent service is running. EXPECTED: Agent service stopped"
+    }
 }
 
 function New-DockerNetwork {
@@ -268,7 +314,7 @@ function Clear-TestConfiguration {
     Write-Host "Cleaning up test configuration"
 
     Remove-AllUnusedDockerNetworks -Session $Session
-    Disable-VRouterAgent -Session $Session
+    Disable-AgentService -Session $Session
     Disable-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -AdapterName $TestConfiguration.AdapterName `
         -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
@@ -342,7 +388,7 @@ function Initialize-ComputeServices {
 
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        Enable-VRouterAgent -Session $Session -ConfigFilePath $TestConfiguration.AgentConfigFilePath
+        Enable-AgentService -Session $Session
 }
 
 function Remove-DockerNetwork {
