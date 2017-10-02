@@ -31,7 +31,7 @@ function Test-AgentService {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
-            Write-Host "Unistalling Agent"
+            Write-Host "Uninstalling Agent"
             Start-Process msiexec.exe -ArgumentList @("/x", "C:\Artifacts\contrail-vrouter-agent.msi", "/quiet") -Wait
 
             # Refresh Path
@@ -45,6 +45,7 @@ function Test-AgentService {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
+            Write-Host "Starting Agent"
             Start-Service ContrailAgent | Out-Null
         }
     }
@@ -53,6 +54,7 @@ function Test-AgentService {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
         Invoke-Command -Session $Session -ScriptBlock {
+            Write-Host "Stoping Agent"
             Stop-Service ContrailAgent | Out-Null
         }
     }
@@ -216,7 +218,7 @@ function Test-AgentService {
         Assert-IsAgentServiceRegistered -Session $Session
 
         New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
-        
+
         Enable-AgentService -Session $Session
         Assert-IsAgentServiceEnabled -Session $Session
 
