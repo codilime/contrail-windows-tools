@@ -283,7 +283,7 @@ function Remove-DockerNetworkAccordingToEnv {
 # Relies on environment variable: AgentExecutableName.
 function Stop-Agent {
     Write-Host "Stopping agent..."
-    Stop-Service ContrailAgent | Out-Null
+    Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
 }
 
 # Sets up an environment consisting of:
