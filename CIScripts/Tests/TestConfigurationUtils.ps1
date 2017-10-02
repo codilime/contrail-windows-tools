@@ -192,8 +192,8 @@ function Disable-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
     Invoke-Command -Session $Session -ScriptBlock {
-        Write-Host "Stoping Agent"
-        Stop-Service ContrailAgent | Out-Null
+        Write-Host "Stopping Agent"
+        Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
     }
 }
 
