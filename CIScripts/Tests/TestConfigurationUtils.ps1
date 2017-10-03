@@ -172,8 +172,8 @@ function Disable-AgentService {
 function Assert-IsAgentServiceEnabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
+    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
+    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS
     $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
 
     for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
