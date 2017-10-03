@@ -267,7 +267,6 @@ function Remove-DockerNetworkAccordingToEnv {
     Remove-DockerNetwork -NetworkName $Env:DockerNetworkName
 }
 
-# Relies on environment variable: AgentExecutableName.
 function Stop-Agent {
     Write-Host "Stopping agent..."
     Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
@@ -316,7 +315,7 @@ function Initialize-SimpleEnvironment {
 
 # Removes test environment created by Initialize-SimpleEnvironment.
 # Relies on environment variables (indirectly) - see
-# Stop-Agent, Remove-DockerNetworkAccordingToEnv.
+# Remove-DockerNetworkAccordingToEnv.
 function Remove-SimpleEnvironment {
     Write-Host "Removing simple test environment..."
     Stop-Agent

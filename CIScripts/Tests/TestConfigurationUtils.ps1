@@ -30,6 +30,9 @@ class TestConfiguration {
     [string] $AgentSampleConfigFilePath;
 }
 
+$MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
+$TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
+
 function Stop-ProcessIfExists {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [string] $ProcessName)
@@ -169,29 +172,43 @@ function Disable-AgentService {
 function Assert-IsAgentServiceEnabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    $Service = Invoke-Command -Session $Session -ScriptBlock {
-        return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
+    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
+    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
+    $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
+
+    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
+        $Status = Invoke-Command -Session $Session -ScriptBlock {
+            return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
+        }
+        if ($Status.Value -eq "Running") {
+            return
+        }
+
+        Start-Sleep -s $TimeBetweenChecksInSeconds
     }
-    if (!$Service) {
-        throw "Agent service is not registered. EXPECTED: Agent service registered"
-    }
-    if ($Service.Status -eq "Stopped") {
-        throw "Agent service is stopped. EXPECTED: Agent service running"
-    }
+
+    throw "Agent service is not enabled. EXPECTED: Agent service is enabled"
 }
 
 function Assert-IsAgentServiceDisabled {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
-    $Service = Invoke-Command -Session $Session -ScriptBlock {
-        return $(Get-Service "ContrailAgent" -ErrorAction SilentlyContinue)
+    $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
+    $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
+    $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
+
+    for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
+        $Status = Invoke-Command -Session $Session -ScriptBlock {
+            return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
+        }
+        if ($Status.Value -eq "Stopped") {
+            return
+        }
+
+        Start-Sleep -s $TimeBetweenChecksInSeconds
     }
-    if (!$Service) {
-        throw "Agent service is not registered. EXPECTED: Agent service registered"
-    }
-    if ($Service.Status -eq "Running") {
-        throw "Agent service is running. EXPECTED: Agent service stopped"
-    }
+
+    throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
 }
 
 function New-DockerNetwork {
