@@ -4,12 +4,6 @@
 # Example usage can be seen in Setup-SimpleTestEnv.ps1.
 
 
-function Test-IsProcessRunning {
-    Param ([Parameter(Mandatory = $true)] [string] $ProcessName)
-    $Proc = Get-Process $ProcessName -ErrorAction SilentlyContinue
-    return $(if ($Proc) { $true } else { $false })
-}
-
 function Initialize-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $PhysicalIfName,
            [Parameter(Mandatory = $true)] [string] $NetworkName)
