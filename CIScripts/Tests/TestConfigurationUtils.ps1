@@ -347,7 +347,7 @@ function New-AgentConfigFile {
         # Save file with prepared config
         [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
 
-        Copy-Item -Path $DestConfigFilePath -Destination C:\ProgramData\Contrail\etc\contrail\
+        # Copy-Item -Path $DestConfigFilePath -Destination C:\ProgramData\Contrail\etc\contrail\
     }
 }
 
