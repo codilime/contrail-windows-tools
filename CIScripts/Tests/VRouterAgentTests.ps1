@@ -88,42 +88,6 @@ function Test-VRouterAgentIntegration {
         }
     }
 
-    # function Assert-AgentIsRunning {
-    #     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-    #     $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-    #     $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
-    #     $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
-
-    #     for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-    #         if (Test-IsVRouterAgentEnabled -Session $Session) {
-    #             return
-    #         }
-
-    #         Start-Sleep -s $TimeBetweenChecksInSeconds
-    #     }
-
-    #     throw "vRouter Agent is not running. EXPECTED: vRouter Agent is running"
-    # }
-
-    # function Assert-AgentIsNotRunning {
-    #     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-    #     $MaxWaitTimeInSeconds = $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS
-    #     $TimeBetweenChecksInSeconds = $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS
-    #     $MaxNumberOfChecks = [Math]::Ceiling($MaxWaitTimeInSeconds / $TimeBetweenChecksInSeconds)
-
-    #     for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-    #         if (!(Test-IsVRouterAgentEnabled -Session $Session)) {
-    #             return
-    #         }
-
-    #         Start-Sleep -s $TimeBetweenChecksInSeconds
-    #     }
-
-    #     throw "vRouter Agent is running. EXPECTED: vRouter Agent is not running"
-    # }
-
     function Assert-NoVifs {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 

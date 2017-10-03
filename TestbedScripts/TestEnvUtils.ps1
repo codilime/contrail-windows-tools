@@ -3,13 +3,6 @@
 # By default relevant environment variables are created in Setup-EnvVars.ps1.
 # Example usage can be seen in Setup-SimpleTestEnv.ps1.
 
-# function Stop-ProcessIfExists {
-#     Param ([Parameter(Mandatory = $true)] [string] $ProcessName)
-#     $Proc = Get-Process $ProcessName -ErrorAction SilentlyContinue
-#     if ($Proc) {
-#         $Proc | Stop-Process -Force
-#     }
-# }
 
 function Test-IsProcessRunning {
     Param ([Parameter(Mandatory = $true)] [string] $ProcessName)

@@ -148,37 +148,6 @@ function Test-IsDockerDriverEnabled {
     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
 }
 
-# function Enable-VRouterAgent {
-#     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-#            [Parameter(Mandatory = $true)] [string] $ConfigFilePath)
-
-#     Write-Host "Enabling Agent"
-
-#     Invoke-Command -Session $Session -ScriptBlock {
-#         $ConfigFilePath = $Using:ConfigFilePath
-
-#         Start-Job -ScriptBlock {
-#             Param ($ConfigFilePath)
-
-#             & "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe" --config_file $ConfigFilePath
-#         } -ArgumentList $ConfigFilePath | Out-Null
-#     }
-# }
-
-# function Disable-VRouterAgent {
-#     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-#     Write-Host "Disabling Agent"
-
-#     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
-# }
-
-# function Test-IsVRouterAgentEnabled {
-#     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-#     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-vrouter-agent"
-# }
-
 function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
 
