@@ -4,9 +4,6 @@
 . $PSScriptRoot\Job.ps1
 $Job = [Job]::new("Test-integration")
 
-# Import PowerCLI for VMUtils
-Import-Module VMware.PowerCLI
-
 # Sourcing VM management functions
 . $PSScriptRoot\VMUtils.ps1
 
@@ -25,9 +22,9 @@ for ($i = 0; $i -lt $VMsNeeded; $i++) {
 Write-Host "Starting Testbeds:"
 $VMNames.ForEach({ Write-Host $_ })
 
-$Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -PowerCLIScriptPath $PowerCLIScriptPath `
-    -VIServerAccessData $VIServerAccessData -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials `
-    -ArtifactsDir $ArtifactsDir -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes
+$Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
+    -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials -ArtifactsDir $ArtifactsDir `
+    -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes
 
 Write-Host "Started Testbeds:"
 $Sessions.ForEach({ Write-Host $_.ComputerName })
@@ -104,6 +101,6 @@ if($Env:RUN_DRIVER_TESTS -eq "1") {
 }
 
 Write-Host "Removing VMs..."
-Remove-TestbedVMs -VMNames $VMNames -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+Remove-TestbedVMs -VMNames $VMNames -VIServerAccessData $VIServerAccessData
 
 $Job.Done()

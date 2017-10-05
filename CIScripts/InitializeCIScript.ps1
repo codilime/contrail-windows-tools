@@ -3,7 +3,7 @@ if ($Env:ENABLE_TRACE -eq $true) {
     Set-PSDebug -Trace 1
 }
 
-# Refresh Path and PSModulePath
+# Refresh Path
 $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
 
 # Stop script on error
