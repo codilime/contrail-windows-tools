@@ -34,11 +34,6 @@ function Initialize-VIServer {
     }
 
     try {
-        $Res = Get-Command -Name Connect-VIServer -CommandType Cmdlet -ErrorAction SilentlyContinue
-        if (-Not $Res) {
-            & "$PowerCLIScriptPath" | Out-Null
-        }
-
         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
         Set-PowerCLIConfiguration -DefaultVIServerMode Single -Confirm:$false | Out-Null
 

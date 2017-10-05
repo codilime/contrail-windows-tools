@@ -4,6 +4,9 @@
 . $PSScriptRoot\Job.ps1
 $Job = [Job]::new("Test-integration")
 
+# Import PowerCLI for VMUtils
+Import-Module VMware.PowerCLI
+
 # Sourcing VM management functions
 . $PSScriptRoot\VMUtils.ps1
 
