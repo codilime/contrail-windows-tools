@@ -5,6 +5,7 @@
 $Job = [Job]::new("Test-integration")
 
 # Import PowerCLI for VMUtils
+echo $env:PSModulePath
 Import-Module "C:\Program Files\WindowsPowerShell\Modules\VMware.PowerCLI"
 
 # Sourcing VM management functions
