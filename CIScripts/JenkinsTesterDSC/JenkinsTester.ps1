@@ -1,13 +1,13 @@
 Configuration JenkinsTester {
     param(
-        [string[]]$ComputerName
+        [Parameter(Mandatory=$true)][string[]]$TesterName
     )
 
     Import-DscResource -ModuleName PsDesiredStateConfiguration
     Import-DscResource -ModuleName cChoco
     Import-DscResource -ModuleName PowerShellModule
 
-    Node $ComputerName {
+    Node $TesterName {
         WindowsFeature NetFrameworkCore {
             Ensure    = "Present"
             Name      = "NET-Framework-Core"
@@ -53,6 +53,3 @@ Configuration JenkinsTester {
         }
     }
 }
-
-# Compile the configuration
-JenkinsTester

@@ -4,3 +4,6 @@ build-*/
 
 ### Vagrant ###
 .vagrant/
+
+##### DSC #####
+CIScripts/JenkinsTesterDSC/JenkinsTester
