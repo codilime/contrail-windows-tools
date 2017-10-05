@@ -4,7 +4,6 @@ if ($Env:ENABLE_TRACE -eq $true) {
 }
 
 # Refresh Path and PSModulePath
-$Env:PSModulePath = [System.Environment]::GetEnvironmentVariable("PSModulePath", "Machine")
 $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
 
 # Stop script on error
