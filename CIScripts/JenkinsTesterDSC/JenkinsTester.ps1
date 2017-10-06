@@ -15,7 +15,6 @@ Configuration JenkinsTester {
 
         cChocoInstaller installChoco {
             InstallDir = "C:\ProgramData\chocolatey"
-            DependsOn = "[WindowsFeature]NetFrameworkCore"
         }
 
         cChocoPackageInstaller installJava {
@@ -46,6 +45,7 @@ Configuration JenkinsTester {
                 (Get-PowerCLIConfiguration -Scope AllUsers).ParticipateInCEIP -eq $false
             }
             GetScript = { @{ Result = "" } }
+            DependsOn = "[PSModuleResource]PowerCli"
         }
 
         LocalConfigurationManager {
