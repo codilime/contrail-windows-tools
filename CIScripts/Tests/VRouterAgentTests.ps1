@@ -604,7 +604,7 @@ function Test-VRouterAgentIntegration {
             $JobListener = Start-Job -ScriptBlock {
                 $Command = (`
                     '$ErrorActionPreference = \"SilentlyContinue\";' +`
-                    '$Server = New-Object System.Net.Sockets.TcpListener({0}});' +`
+                    '$Server = New-Object System.Net.Sockets.TcpListener({0});' +`
                     '$Server.Start();' +`
                     '$Socket = $Server.AcceptTcpClient();' +`
                     '$StreamReader = New-Object System.IO.StreamReader($Socket.GetStream());' +`
@@ -622,7 +622,7 @@ function Test-VRouterAgentIntegration {
                     '$ErrorActionPreference = \"SilentlyContinue\";' +`
                     '$IpAddress = [System.Net.IPAddress]::Parse(\"{0}\");' +`
                     '$TcpClient = New-Object System.Net.Sockets.TcpClient;' +`
-                    '$TaskConnect = $TcpClient.ConnectAsync($IpAddress, {1}});' +`
+                    '$TaskConnect = $TcpClient.ConnectAsync($IpAddress, {1});' +`
                     '$TaskConnect.Wait(2000);' +`
                     '$StreamWriter = New-Object System.IO.StreamWriter($TcpClient.GetStream());' +`
                     '$StreamWriter.WriteLine(\"{2}}\");' +`
