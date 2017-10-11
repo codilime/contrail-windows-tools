@@ -191,10 +191,14 @@ function Test-VRouterAgentIntegration {
     function Create-ContainerInRemoteSession {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $NetworkName,
-               [Parameter(Mandatory = $true)] [string] $ContainerName)
+               [Parameter(Mandatory = $true)] [string] $ContainerName,
+               [Parameter(Mandatory = $false)] [string] $DockerImage)
+        if (!$DockerImage) {
+            $DockerImage = "microsoft/nanoserver"
+        }
         Write-Host "Creating container: name = $ContainerName; network = $NetworkName."
         $Output = Invoke-Command -Session $Session -ScriptBlock {
-            $DockerOutput = (& docker run -id --name $Using:ContainerName --network $Using:NetworkName microsoft/nanoserver powershell 2>&1) | Out-String
+            $DockerOutput = (& docker run -id --name $Using:ContainerName --network $Using:NetworkName $Using:DockerImage powershell 2>&1) | Out-String
             $LASTEXITCODE
             $DockerOutput
         }
@@ -637,16 +641,14 @@ function Test-VRouterAgentIntegration {
             return $ReceivedMessage
         }
 
-        # TODO: Enable this test once it is actually expected to pass.
-        # .NET in microsoft/nanoserver docker image doesn't have TCPServer
-        #Write-Host "        Sent message: $Message"
-        #Write-Host "        Received message: $ReceivedMessage"
+        Write-Host "        Sent message: $Message"
+        Write-Host "        Received message: $ReceivedMessage"
 
-        #if ($Message -ne $ReceivedMessage) {
-        #    throw "Sent and received messages do not match."
-        #} else {
-        #    Write-Host "        Match!"
-        #}
+        if ($Message -ne $ReceivedMessage) {
+            throw "Sent and received messages do not match."
+        } else {
+            Write-Host "        Match!"
+        }
 
         Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
 
