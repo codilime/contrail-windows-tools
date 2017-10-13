@@ -1,8 +1,8 @@
 function Get-AccessTokenFromKeyStone {
     Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
-        [Parameter(Mandatory = $true)] [string] $TenantName,
-        [Parameter(Mandatory = $true)] [string] $UserName,
-        [Parameter(Mandatory = $true)] [string] $Password)
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $UserName,
+           [Parameter(Mandatory = $true)] [string] $Password)
 
     $Request = @{
         auth = @{
@@ -40,11 +40,11 @@ class SubnetConfiguration {
 
 function Add-OpenContrailNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
-        [Parameter(Mandatory = $true)] [string] $AuthToken,
-        [Parameter(Mandatory = $true)] [string] $TenantName,
-        [Parameter(Mandatory = $true)] [string] $NetworkName,
-        [Parameter(Mandatory = $false)] [SubnetConfiguration] $SubnetConfig `
-            = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $NetworkName,
+           [Parameter(Mandatory = $false)] [SubnetConfiguration] $SubnetConfig `
+               = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
 
     $Subnet = @{
         subnet           = @{
@@ -84,8 +84,8 @@ function Add-OpenContrailNetwork {
 
 function Remove-OpenContrailNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
-        [Parameter(Mandatory = $true)] [string] $AuthToken,
-        [Parameter(Mandatory = $true)] [string] $NetworkUuid)
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $NetworkUuid)
 
     $RequestUrl = $OpenContrailUrl + "/virtual-network/" + $NetworkUuid
     Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
