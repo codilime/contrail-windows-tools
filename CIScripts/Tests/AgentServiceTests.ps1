@@ -239,9 +239,9 @@ function Test-AgentService {
     $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceDisabling", {
         Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
     })
-    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
-        Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
-    })
+    #$AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
+    #    Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
+    #})
 
     # Test cleanup
     Install-Agent -Session $Session
