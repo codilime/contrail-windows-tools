@@ -68,6 +68,23 @@ function Test-AgentService {
         }
     }
 
+    function Invoke-AgentCrash {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
+    }
+
+    function Assert-AgentProcessCrashed {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+        $Res = Invoke-Command -Session $Session -ScriptBlock {
+            return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 1 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly"})
+        }
+        if(!$Res) {
+            throw "Agent process didn't crush. EXPECTED: Agent process crushed"
+        }
+    }
+
     #
     # Tests definitions
     #
@@ -188,6 +205,34 @@ function Test-AgentService {
         Write-Host "===> PASSED: Test-AgentServiceDisabling"
     }
 
+    function Test-AgentServiceRestart {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+        
+        Write-Host "===> Running: Test-AgentServiceRestart"
+
+        Write-Host "======> Given Agent is enabled"
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Install-Agent -Session $Session
+        Assert-IsAgentServiceRegistered -Session $Session
+
+        New-AgentConfigFile -Session $Session -TestConfiguration $TestConfiguration
+        
+        Enable-AgentService -Session $Session
+        Assert-IsAgentServiceEnabled -Session $Session
+
+        Write-Host "======> When Agent process is crushed"
+        Invoke-AgentCrash -Session $Session
+        Assert-AgentProcessCrashed -Session $Session
+
+        Write-Host "======> Then Agent service is restarted"
+        Start-Sleep -s 10
+        Assert-IsAgentServiceEnabled -Session $Session
+
+        Write-Host "===> PASSED: Test-AgentServiceRestart"
+    }
+
 
     $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceIsRegisteredAfterInstall", {
         Test-AgentServiceIsRegisteredAfterInstall -Session $Session -TestConfiguration $TestConfiguration
@@ -203,6 +248,9 @@ function Test-AgentService {
     })
     $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceDisabling", {
         Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
+    })
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
+        Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
     })
 
     # Test cleanup
