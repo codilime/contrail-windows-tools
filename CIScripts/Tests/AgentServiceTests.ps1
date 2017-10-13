@@ -213,12 +213,14 @@ function Test-AgentService {
 
         Write-Host "======> When Agent process is crushed"
         Start-Sleep -s 10
-        Invoke-AgentCrash -Session $Session
-        Start-Sleep -s 10
-        Assert-AgentProcessCrashed -Session $Session
+        Invoke-Command -Session $Session -ScriptBlock {
+            Stop-Process "contrail-vrouter-agent" -Force -ErrorAction SilentlyContinue
+        }
+        #Start-Sleep -s 10
+        #Assert-AgentProcessCrashed -Session $Session
 
         Write-Host "======> Then Agent service is restarted"
-        Start-Sleep -s 10
+        Start-Sleep -s 60
         Assert-IsAgentServiceEnabled -Session $Session
 
         Write-Host "===> PASSED: Test-AgentServiceRestart"
@@ -240,9 +242,9 @@ function Test-AgentService {
     $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceDisabling", {
         Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
     })
-   # $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
-   #     Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
-   # })
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
+        Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
+    })
 
     # Test cleanup
     Install-Agent -Session $Session
