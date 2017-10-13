@@ -213,6 +213,7 @@ function Test-AgentService {
 
         Write-Host "======> When Agent process is crushed"
         Invoke-AgentCrash -Session $Session
+        Start-Sleep -s 5
         Assert-AgentProcessCrashed -Session $Session
 
         Write-Host "======> Then Agent service is restarted"
