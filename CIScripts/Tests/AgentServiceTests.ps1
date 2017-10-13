@@ -74,17 +74,6 @@ function Test-AgentService {
         Stop-ProcessIfExists -Session $Session -ProcessName "contrail-vrouter-agent"
     }
 
-    function Assert-AgentProcessCrashed {
-        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
-
-        $Res = Invoke-Command -Session $Session -ScriptBlock {
-            return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 1 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly"})
-        }
-        if(!$Res) {
-            throw "Agent process didn't crush. EXPECTED: Agent process crushed"
-        }
-    }
-
     #
     # Tests definitions
     #
