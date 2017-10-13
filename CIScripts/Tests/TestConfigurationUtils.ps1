@@ -182,10 +182,10 @@ function Assert-IsAgentServiceEnabled {
         $Status = Invoke-Command -Session $Session -ScriptBlock {
             return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
         }
+        $Status.Value
         if ($Status.Value -eq "Running") {
             return
         }
-        Write-Host "Status : $Status"
         Start-Sleep -s $TimeBetweenChecksInSeconds
     }
 
