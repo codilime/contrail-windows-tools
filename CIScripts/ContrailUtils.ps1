@@ -27,8 +27,8 @@ class SubnetConfiguration {
     [string] $AllocationPoolsStart;
     [string] $AllocationPoolsEnd;
 
-    SubnetConfiguration([string] $IpPrefix, [int] $IpPrefixLen, 
-        [string] $DefaultGateway, [string] $AllocationPoolsStart, 
+    SubnetConfiguration([string] $IpPrefix, [int] $IpPrefixLen,
+        [string] $DefaultGateway, [string] $AllocationPoolsStart,
         [string] $AllocationPoolsEnd) {
         $this.IpPrefix = $IpPrefix
         $this.IpPrefixLen = $IpPrefixLen
@@ -53,7 +53,7 @@ function Add-OpenContrailNetwork {
         }
         addr_from_start  = $true
         enable_dhcp      = $true
-        default_gateway  = $SubnetConfig.DefaultGateway 
+        default_gateway  = $SubnetConfig.DefaultGateway
         allocation_pools = @(@{
                 start = $SubnetConfig.AllocationPoolsStart
                 end   = $SubnetConfig.AllocationPoolsEnd
@@ -86,9 +86,7 @@ function Remove-OpenContrailNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
         [Parameter(Mandatory = $true)] [string] $AuthToken,
         [Parameter(Mandatory = $true)] [string] $NetworkUuid)
-           
-    $RequestUrl = $OpenContrailUrl + "/virtual-network/" + $NetworkUuid
-    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
 
-    return $Response
+    $RequestUrl = $OpenContrailUrl + "/virtual-network/" + $NetworkUuid
+    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
 }
