@@ -212,8 +212,9 @@ function Test-AgentService {
         Assert-IsAgentServiceEnabled -Session $Session
 
         Write-Host "======> When Agent process is crushed"
+        Start-Sleep -s 10
         Invoke-AgentCrash -Session $Session
-        Start-Sleep -s 5
+        Start-Sleep -s 10
         Assert-AgentProcessCrashed -Session $Session
 
         Write-Host "======> Then Agent service is restarted"
