@@ -15,6 +15,8 @@ function Test-SNAT {
            [Parameter(Mandatory = $true)] [SNATConfiguration] $SNATConfiguration,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\CommonTestCode.ps1
+
     function New-MgmtSwitch {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName)
@@ -365,8 +367,6 @@ function Test-SNAT {
         Write-Host "===> Running Simple SNAT test"
 
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-
-        . $PSScriptRoot\CommonTestCode.ps1
 
         # SNAT VM options
         $SNATMgmtSwitchName = "snat-mgmt"

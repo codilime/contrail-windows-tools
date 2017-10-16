@@ -3,6 +3,8 @@ function Test-ICMPoMPLSoGRE {
            [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session2,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\CommonTestCode.ps1
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running ICMP over MPLS over GRE test"
 
@@ -13,8 +15,6 @@ function Test-ICMPoMPLSoGRE {
         $NetworkName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
         $Container1ID = Invoke-Command -Session $Session1 -ScriptBlock { docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost }
         $Container2ID = Invoke-Command -Session $Session2 -ScriptBlock { docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost }
-
-        . $PSScriptRoot\CommonTestCode.ps1
 
         $Container1IP, $Container2IP = Initialize-MPLSoGRE -Session1 $Session1 -Session2 $Session2 `
             -Container1ID $Container1ID -Container2ID $Container2ID -TestConfiguration $TestConfiguration

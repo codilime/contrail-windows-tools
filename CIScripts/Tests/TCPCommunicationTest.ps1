@@ -2,6 +2,8 @@ function Test-TCPCommunication {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+    . $PSScriptRoot\CommonTestCode.ps1
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Write-Host "===> Running TCP Communication test"
 
@@ -15,8 +17,6 @@ function Test-TCPCommunication {
             $ClientID = docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost
             return $ServerID, $ClientID
         }
-
-        . $PSScriptRoot\CommonTestCode.ps1
 
         Write-Host "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session -AdapterName $TestConfiguration.AdapterName
