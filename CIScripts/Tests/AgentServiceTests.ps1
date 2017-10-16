@@ -214,7 +214,7 @@ function Test-AgentService {
         Write-Host "======> When Agent process is crushed"
         Invoke-AgentCrash -Session $Session
         
-        #Assert-AgentProcessCrashed -Session $Session
+        Assert-AgentProcessCrashed -Session $Session
 
         Write-Host "======> Then Agent service is restarted"
         Start-Sleep -s 60
@@ -239,9 +239,9 @@ function Test-AgentService {
     $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceDisabling", {
         Test-AgentServiceDisabling -Session $Session -TestConfiguration $TestConfiguration
     })
-    #$AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
-    #    Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
-    #})
+    $AgentServiceTestsTimeTracker.StepQuiet("Test-AgentServiceRestart", {
+        Test-AgentServiceRestart -Session $Session -TestConfiguration $TestConfiguration
+    })
 
     # Test cleanup
     Install-Agent -Session $Session
