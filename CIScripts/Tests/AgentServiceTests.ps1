@@ -211,13 +211,13 @@ function Test-AgentService {
         Enable-AgentService -Session $Session
         Assert-IsAgentServiceEnabled -Session $Session
 
-        Write-Host "======> When Agent process is crushed"
+        Write-Host "======> When Agent process is crashed"
+        # Wait for contrail-vrouter-agent process to start
+        Start-Sleep -s 1
         Invoke-AgentCrash -Session $Session
-        
         Assert-AgentProcessCrashed -Session $Session
 
         Write-Host "======> Then Agent service is restarted"
-        Start-Sleep -s 60
         Assert-IsAgentServiceEnabled -Session $Session
 
         Write-Host "===> PASSED: Test-AgentServiceRestart"

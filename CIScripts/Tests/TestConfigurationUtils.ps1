@@ -182,7 +182,6 @@ function Assert-IsAgentServiceEnabled {
         $Status = Invoke-Command -Session $Session -ScriptBlock {
             return $((Get-Service "ContrailAgent" -ErrorAction SilentlyContinue).Status)
         }
-        $Status.Value
         if ($Status.Value -eq "Running") {
             return
         }
@@ -219,9 +218,8 @@ function Assert-AgentProcessCrashed {
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 10 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly"})
     }
-    Write-Host "Output: $Res"
     if(!$Res) {
-        throw "Agent process didn't crush. EXPECTED: Agent process crushed"
+        throw "Agent process didn't crash. EXPECTED: Agent process crashed"
     }
 }
 
