@@ -77,7 +77,7 @@ function Test-DockerMultiTenancy {
         Write-Host "===> Running: Test-DifferentTenantsSameIp"
 
         Write-Host "======> Given environment with networks for different tenants"
-        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         $ExpectedIPAddress = "10.0.0.100"
         $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", $ExpectedIPAddress, $ExpectedIPAddress)
         $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
@@ -86,37 +86,42 @@ function Test-DockerMultiTenancy {
         
         $Networks = SetUpNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants @("pm-1", "pm-2") `
             -SubnetConfig $SubnetConfig
-
+        $Containers = @()
+        $DockerNetworks = @()
         Try {
             Write-Host "======> When docker networks are created for each tenant"
             foreach ($Network in $Networks) {
-                New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name -TenantName $Network.TenantName `
-                    -Network $Network.Name | Out-Null
+                $DockerNetworks += New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name -TenantName $Network.TenantName `
+                    -Network $Network.Name
             }
 
             Write-Host "======> When containers for each network are created and run"
-            foreach ($Network in $Networks) {
+            foreach ($Network in $DockerNetworks) {
                 # Using the same container name as name of network
-                New-Container -Session $Session -Name $Network.Name -NetworkName $Network.Name | Out-Null
+                $Containers += New-Container -Session $Session -NetworkName $Network
             }
 
             Write-Host "======> Then each container has same ip address"
-            foreach ($Network in $Networks) {
-                Assert-IsContainerIpEqualToExpectedValue -Session $Session -ContainerName $Network.Name -ExpectedIPAddress $ExpectedIPAddress
+            foreach ($Container in $Containers) {
+                Assert-IsContainerIpEqualToExpectedValue -Session $Session -ContainerName $Container -ExpectedIPAddress $ExpectedIPAddress
             }
         }
         Finally {
-            # Regardless result of test result clean up created networks and containers
-            # Clean up in reverse order to workaround JW-1202 issue
-            [array]::Reverse($Networks)
-            foreach ($Network in $Networks) {
-                Remove-Container -Session $Session -Name $Network.Name
-                Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name
+            # Regardless result of test result clean up created networks and containers.
+            # It is required to remove endpoints from Contrail before network clean up
+            Write-Host "===> clean up"
+            foreach ($Container in $Containers) {
+                Remove-Container -Session $Session -Name $Container
+            }
+
+            foreach ($Network in $DockerNetworks) {
+                Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network
             }
 
             CleanUpNetworks -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Networks $Networks
-            #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         }
+
+        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Write-Host "===> PASSED: Test-DifferentTenantsSameIp"
     }
 
