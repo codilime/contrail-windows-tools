@@ -29,7 +29,12 @@ class TestConfiguration {
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
-    [string] $AgentSampleConfigFilePath;
+}
+
+enum TunnelType {
+    MPLSoGRE;
+    MPLSoUDP;
+    VxLAN;
 }
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -310,7 +315,8 @@ function Clear-TestConfiguration {
 
 function New-AgentConfigFile {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+           [Parameter] [TunnelType] $TunnelType = [TunnelType]::MPLSoGRE)
 
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
@@ -323,49 +329,49 @@ function New-AgentConfigFile {
 
     # Prepare parameters for script block
     $ControllerIP = $TestConfiguration.ControllerIP
+    $ControllerUdpIP = $TestConfiguration.ControllerUdpIP
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
 
-    $SourceConfigFilePath = $TestConfiguration.AgentSampleConfigFilePath
     $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
 
     Invoke-Command -Session $Session -ScriptBlock {
         $ControllerIP = $Using:ControllerIP
+        $ControllerUdpIP = $Using:ControllerUdpIP
         $VHostIfName = $Using:VHostIfName
         $VHostIfIndex = $Using:VHostIfIndex
         $PhysIfName = $Using:PhysIfName
+        $TunnelType = $Using:TunnelType
 
-        $SourceConfigFilePath = $Using:SourceConfigFilePath
         $DestConfigFilePath = $Using:DestConfigFilePath
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
         $VHostGatewayIP = $Using:VHostGatewayIP
+        
+        if ($TunnelType -eq [TunnelType]::MPLSoGRE) {
+            $DesiredControllerIP = $ControllerIP
+        } else {
+            $DesiredControllerIP = $ControllerUdpIP
+        }
 
-        $ConfigFileContent = [System.IO.File]::ReadAllText($SourceConfigFilePath)
+        $ConfigFileContent = @"
+[CONTROL-NODE]
+server=$DesiredControllerIP
 
-        # Insert server IP only in [CONTROL-NODE] and [DISCOVERY] (first 2 occurrences of "server=")
-        [regex] $ServerIpPattern = "# server=.*"
-        $ServerIpString = "server=$ControllerIP"
-        $ConfigFileContent = $ServerIpPattern.replace($ConfigFileContent, $ServerIpString, 2)
+[DISCOVERY]
+server=$DesiredControllerIP
 
-        # Insert ifName of HNSTransparent interface
-        $ConfigFileContent = $ConfigFileContent -Replace "# name=vhost0", "name=$VHostIfName"
-
-        # Insert ifName of Ethernet1 interface
-        $ConfigFileContent = $ConfigFileContent `
-                                -Replace "# physical_interface=vnet0", "physical_interface=$PhysIfName"
-
-        # Insert vhost IP address
-        $ConfigFileContent = $ConfigFileContent -Replace "# ip=10.1.1.1/24", "ip=$VHostIP/24"
-
-        # Insert vhost gateway IP address
-        $ConfigFileContent = $ConfigFileContent -Replace "# gateway=10.1.1.254", "gateway=$VHostGatewayIP"
+[VIRTUAL-HOST-INTERFACE]
+name=$VHostIfName
+ip=$VHostIP/24
+gateway=$VHostGatewayIP
+physical_interface=$PhysIfName
+"@
 
         # Save file with prepared config
         [System.IO.File]::WriteAllText($DestConfigFilePath, $ConfigFileContent)
-
     }
 }
 

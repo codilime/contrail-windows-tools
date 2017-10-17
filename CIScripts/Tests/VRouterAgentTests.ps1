@@ -7,6 +7,7 @@ function Test-VRouterAgentIntegration {
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     . $PSScriptRoot\CommonTestCode.ps1
+    . $PSScriptRoot\..\ContrailUtils.ps1
 
     $MAX_WAIT_TIME_FOR_AGENT_PROCESS_IN_SECONDS = 60
     $TIME_BETWEEN_AGENT_PROCESS_CHECKS_IN_SECONDS = 5
@@ -259,7 +260,8 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Container1Name,
-               [Parameter(Mandatory = $true)] [string] $Container2Name)
+               [Parameter(Mandatory = $true)] [string] $Container2Name,
+               [Parameter] [TunnelType] $TunnelType = [TunnelType]::MPLSoGRE)
         Write-Host "======> Given Docker Driver and Extension are running"
 
         # 1st compute node
@@ -277,13 +279,13 @@ function Test-VRouterAgentIntegration {
         Write-Host "======> Given Agent is running"
 
         # 1st compute node
-        New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration
+        New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration -TunnelType $TunnelType
         Enable-AgentService -Session $Session1
         Assert-IsAgentServiceEnabled -Session $Session1
 
         # 2nd compute node (if there actually is more than 1 compute node)
         if ($Session1 -ne $Session2) {
-           New-AgentConfigFile -Session $Session2 -TestConfiguration $TestConfiguration
+           New-AgentConfigFile -Session $Session2 -TestConfiguration $TestConfiguration -TunnelType $TunnelType
            Enable-AgentService -Session $Session2
            Assert-IsAgentServiceEnabled -Session $Session2
         }
@@ -501,15 +503,28 @@ function Test-VRouterAgentIntegration {
         })
     }
 
-    function Test-MultiComputeNodesPing {
+    function Test-ICMPoMPLSoGRE {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
-            Write-Host "===> Running: Test-MultiComputeNodesPing"
-            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
-            Write-Host "===> PASSED: Test-MultiComputeNodesPing"
+            Write-Host "===> Running: Test-ICMPoMPLSoGRE"
+            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType [TunnelType]::MPLSoGRE
+            Write-Host "===> PASSED: Test-ICMPoMPLSoGRE"
+        })
+
+    function Test-ICMPoMPLSoUDP {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+        
+        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
+            Write-Host "===> Running: Test-ICMPoMPLSoUDP"
+            # TODO(mc): Add-ContrailVirtualRouter
+            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType [TunnelType]::MPLSoUDP
+            # TODO(mc): Finally Remove-ContrailVirtualRouter
+            Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
     }
 
@@ -743,7 +758,8 @@ function Test-VRouterAgentIntegration {
         Test-Pkt0ReceivesTrafficAfterAgentIsStarted -Session $Session1 -TestConfiguration $TestConfiguration
         Test-GatewayArpIsResolvedInAgent -Session $Session1 -TestConfiguration $TestConfiguration
         Test-SingleComputeNodePing -Session $Session1 -TestConfiguration $TestConfiguration
-        Test-MultiComputeNodesPing -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+        Test-ICMPoMPLSoGRE -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+        Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnIcmpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration

@@ -70,6 +70,7 @@ $DockerDriverConfiguration = [DockerDriverConfiguration] @{
 
 $TestConfiguration = [TestConfiguration] @{
     ControllerIP = $Env:CONTROLLER_IP;
+    ControllerUdpIP = $Env:CONTROLLER_UDP_IP;
     ControllerHostUsername = $Env:CONTROLLER_HOST_USERNAME;
     ControllerHostPassword = $Env:CONTROLLER_HOST_PASSWORD;
     AdapterName = $Env:ADAPTER_NAME;
@@ -77,7 +78,6 @@ $TestConfiguration = [TestConfiguration] @{
     VHostName = "vEthernet (HNSTransparent)"
     ForwardingExtensionName = $Env:FORWARDING_EXTENSION_NAME;
     AgentConfigFilePath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf";
-    AgentSampleConfigFilePath = "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.conf.sample";
     DockerDriverConfiguration = $DockerDriverConfiguration;
 }
 

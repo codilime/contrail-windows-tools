@@ -90,3 +90,34 @@ function Remove-OpenContrailNetwork {
     $RequestUrl = $OpenContrailUrl + "/virtual-network/" + $NetworkUuid
     Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
 }
+
+function Add-ContrailVirtualRouter {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $RouterName,
+           [Parameter(Mandatory = $true)] [string] $RouterIp)
+
+    $Request = @{
+        "virtual-router" = @{
+            parent_type               = "global-system-config"
+            fq_name                   = @("default-global-system-config", $RouterName)
+            virtual_router_ip_address = $RouterIp
+        }
+    }
+
+    $RequestUrl = $OpenContrailUrl + "/virtual-routers"
+    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
+        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth 100 $Request) `
+
+    return $Response.'virtual-router'.'uuid'
+}
+
+function Remove-ContrailVirtualRouter {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $RouterUuid)
+
+    $RequestUrl = $OpenContrailUrl + "/virtual-router/" + $RouterUuid
+    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
+}
