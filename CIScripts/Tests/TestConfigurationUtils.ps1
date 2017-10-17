@@ -233,7 +233,7 @@ function New-DockerNetwork {
     }
 
     if (!$TenantName) {
-        $TenantName = $Configuration.TenantConfiguration.Name
+        $TenantName = $Configuration.Name
     }
 
     Write-Host "Creating network $Name"
