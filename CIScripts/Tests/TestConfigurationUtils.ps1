@@ -22,6 +22,7 @@ class DockerDriverConfiguration {
 class TestConfiguration {
     [DockerDriverConfiguration] $DockerDriverConfiguration;
     [string] $ControllerIP;
+    [int] $ControllerRestPort
     [string] $ControllerHostUsername;
     [string] $ControllerHostPassword;
     [string] $AdapterName;
@@ -217,10 +218,9 @@ function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
            [Parameter(Mandatory = $false)] [string] $Name,
+           [Parameter(Mandatory = $false)] [string] $TenantName,
            [Parameter(Mandatory = $false)] [string] $Network,
            [Parameter(Mandatory = $false)] [string] $Subnet)
-
-    $Configuration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
 
     if (!$Name) {
         $Name = $Configuration.DefaultNetworkName
@@ -230,16 +230,18 @@ function New-DockerNetwork {
         $Network = $Configuration.DefaultNetworkName
     }
 
+    if (!$TenantName) {
+        $TenantName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.Name
+    }
+
     Write-Host "Creating network $Name"
 
     $NetworkID = Invoke-Command -Session $Session -ScriptBlock {
-        $TenantName = ($Using:Configuration).Name
-
         if ($Using:Subnet) {
-            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$Using:Network --subnet $Using:Subnet $Using:Name)
+            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$Using:TenantName -o network=$Using:Network --subnet $Using:Subnet $Using:Name)
         }
         else {
-            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$Using:Network $Using:Name)
+            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$Using:TenantName -o network=$Using:Network $Using:Name)
         }
     }
 

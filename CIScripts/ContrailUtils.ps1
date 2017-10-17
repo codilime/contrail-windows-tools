@@ -1,20 +1,20 @@
-function Get-AccessTokenFromKeyStone {
+function Get-AccessTokenFromKeystone {
     Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
            [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $UserName,
+           [Parameter(Mandatory = $true)] [string] $Username,
            [Parameter(Mandatory = $true)] [string] $Password)
 
     $Request = @{
         auth = @{
             tenantName          = $TenantName
             passwordCredentials = @{
-                username = $UserName
+                username = $Username
                 password = $Password
             }
         }
     }
 
-    $AuthUrl += "/v2.0/tokens"
+    $AuthUrl += "/tokens"
     $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
         -Body (ConvertTo-Json $Request)
     return $Response.access.token.id
@@ -38,8 +38,8 @@ class SubnetConfiguration {
     }
 }
 
-function Add-OpenContrailNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
+function Add-ContrailVirtualNetwork {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
            [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
@@ -75,18 +75,18 @@ function Add-OpenContrailNetwork {
         }
     }
 
-    $RequestUrl = $OpenContrailUrl + "/virtual-networks"
+    $RequestUrl = $ContrailUrl + "/virtual-networks"
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
         -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth 10 $Request) `
 
     return $Response.'virtual-network'.'uuid'
 }
 
-function Remove-OpenContrailNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $OpenContrailUrl,
+function Remove-ContrailVirtualNetwork {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
            [Parameter(Mandatory = $true)] [string] $NetworkUuid)
 
-    $RequestUrl = $OpenContrailUrl + "/virtual-network/" + $NetworkUuid
+    $RequestUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
     Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
 }
