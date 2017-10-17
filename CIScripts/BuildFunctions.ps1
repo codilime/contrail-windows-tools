@@ -201,7 +201,6 @@ function Invoke-AgentBuild {
             "src/base:dependency_test",
             "src/base:label_block_test",
             "src/base:queue_task_test",
-            "src/base:proto_test",
             "src/base:subset_test",
             "src/base:task_test",
             "src/base:timer_test",
