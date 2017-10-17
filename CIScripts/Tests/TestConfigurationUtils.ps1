@@ -222,6 +222,8 @@ function New-DockerNetwork {
            [Parameter(Mandatory = $false)] [string] $Network,
            [Parameter(Mandatory = $false)] [string] $Subnet)
 
+    $Configuration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
     if (!$Name) {
         $Name = $Configuration.DefaultNetworkName
     }
@@ -231,7 +233,7 @@ function New-DockerNetwork {
     }
 
     if (!$TenantName) {
-        $TenantName = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.Name
+        $TenantName = $Configuration.TenantConfiguration.Name
     }
 
     Write-Host "Creating network $Name"

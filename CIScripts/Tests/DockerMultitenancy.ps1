@@ -1,4 +1,4 @@
-function Test-DockerMultitenancy {
+function Test-DockerMultiTenancy {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
         [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
@@ -6,10 +6,8 @@ function Test-DockerMultitenancy {
     . $PSScriptRoot\..\Job.ps1
     . $PSScriptRoot\..\ContrailUtils.ps1
 
-    $MultitenancyTestsTimeTracker = [Job]::new("Test-DockerMultitenancy")
-
     #
-    # Private functions of Test-DockerMultitenancy
+    # Private functions of Test-DockerMultiTenancy
     #
 
     class Network {
@@ -18,7 +16,7 @@ function Test-DockerMultitenancy {
         [string] $Uuid;
     }
 
-    function Assert-IsContainerIpEqualToExpctedValue {
+    function Assert-IsContainerIpEqualToExpectedValue {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
             [Parameter(Mandatory = $true)] [string] $ContainerName,
             [Parameter(Mandatory = $true)] [string] $ExpectedIPAddress)
@@ -26,6 +24,7 @@ function Test-DockerMultitenancy {
         $IPAddress = Invoke-Command -Session $Session -ScriptBlock {
             return $(docker exec $Using:ContainerName powershell "(Get-NetIpAddress -AddressFamily IPv4 | Where-Object IPAddress -NE 127.0.0.1).IPAddress")
         }
+
         if (!$IPAddress) {
             throw "IP Address not found"
         }
@@ -77,35 +76,38 @@ function Test-DockerMultitenancy {
 
         Write-Host "===> Running: Test-DifferentTenantsSameIp"
 
-        Write-Host "======> Given environment with networks for diffrent tenants"
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        Write-Host "======> Given environment with networks for different tenants"
+        #Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         $ExpectedIPAddress = "10.0.0.100"
         $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", $ExpectedIPAddress, $ExpectedIPAddress)
         $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
         $Authtoken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
             -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
         
-        $Networks = SetUpNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants @("pm-1", "pm-2") -SubnetConfig $SubnetConfig
+        $Networks = SetUpNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants @("pm-1", "pm-2") `
+            -SubnetConfig $SubnetConfig
 
         Try {
-            Write-Host "======> When docer networks are created for each tenant"
+            Write-Host "======> When docker networks are created for each tenant"
             foreach ($Network in $Networks) {
-                New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name -TenantName $Network.TenantName -Network $Network.Name | Out-Null
+                New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name -TenantName $Network.TenantName `
+                    -Network $Network.Name | Out-Null
             }
 
             Write-Host "======> When containers for each network are created and run"
             foreach ($Network in $Networks) {
+                # Using the same container name as name of network
                 New-Container -Session $Session -Name $Network.Name -NetworkName $Network.Name | Out-Null
             }
 
             Write-Host "======> Then each container has same ip address"
             foreach ($Network in $Networks) {
-                Assert-IsContainerIpEqualToExpctedValue -Session $Session -ContainerName $Network.Name -ExpectedIPAddress $ExpectedIPAddress
+                Assert-IsContainerIpEqualToExpectedValue -Session $Session -ContainerName $Network.Name -ExpectedIPAddress $ExpectedIPAddress
             }
         }
         Finally {
             # Regardless result of test result clean up created networks and containers
-            #Clean up in reverse order
+            # Clean up in reverse order to workaround JW-1202 issue
             [array]::Reverse($Networks)
             foreach ($Network in $Networks) {
                 Remove-Container -Session $Session -Name $Network.Name
@@ -113,15 +115,15 @@ function Test-DockerMultitenancy {
             }
 
             CleanUpNetworks -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Networks $Networks
-            Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+            #Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         }
         Write-Host "===> PASSED: Test-DifferentTenantsSameIp"
     }
 
-    $DockerMultitenancyTestsTimeTracker = [Job]::new("Test-DockerMultitenancy")
-    $DockerMultitenancyTestsTimeTracker.StepQuiet("Test-DifferentTenantsSameIp", {
+    $DockerMultiTenancyTestsTimeTracker = [Job]::new("Test-DockerMultiTenancy")
+    $DockerMultiTenancyTestsTimeTracker.StepQuiet("Test-DifferentTenantsSameIp", {
             Test-DifferentTenantsSameIp -Session $Session -TestConfiguration $TestConfiguration
         })
 
-    $DockerMultitenancyTestsTimeTracker.Done()
+    $DockerMultiTenancyTestsTimeTracker.Done()
 }
