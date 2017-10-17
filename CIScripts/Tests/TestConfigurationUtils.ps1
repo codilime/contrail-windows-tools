@@ -185,6 +185,7 @@ function Assert-IsAgentServiceEnabled {
         if ($Status.Value -eq "Running") {
             return
         }
+
         Start-Sleep -s $TimeBetweenChecksInSeconds
     }
 
