@@ -70,7 +70,7 @@ $DockerDriverConfiguration = [DockerDriverConfiguration] @{
 
 $TestConfiguration = [TestConfiguration] @{
     ControllerIP = $Env:CONTROLLER_IP;
-    ContraillerRestPort = 8082
+    ControllerRestPort = 8082
     ControllerHostUsername = $Env:CONTROLLER_HOST_USERNAME;
     ControllerHostPassword = $Env:CONTROLLER_HOST_PASSWORD;
     AdapterName = $Env:ADAPTER_NAME;
