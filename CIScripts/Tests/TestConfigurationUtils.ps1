@@ -338,24 +338,22 @@ function New-AgentConfigFile {
 
     $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
 
+    if ($TunnelType -eq [TunnelType]::MPLSoGRE) {
+        $DesiredControllerIP = $ControllerIP
+    } else {
+        $DesiredControllerIP = $ControllerUdpIP
+    }
+
     Invoke-Command -Session $Session -ScriptBlock {
-        $ControllerIP = $Using:ControllerIP
-        $ControllerUdpIP = $Using:ControllerUdpIP
+        $DesiredControllerIP = $Using:DesiredControllerIP
         $VHostIfName = $Using:VHostIfName
         $VHostIfIndex = $Using:VHostIfIndex
         $PhysIfName = $Using:PhysIfName
-        $TunnelType = $Using:TunnelType
 
         $DestConfigFilePath = $Using:DestConfigFilePath
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
         $VHostGatewayIP = $Using:VHostGatewayIP
-        
-        if ($TunnelType -eq [TunnelType]::MPLSoGRE) {
-            $DesiredControllerIP = $ControllerIP
-        } else {
-            $DesiredControllerIP = $ControllerUdpIP
-        }
 
         $ConfigFileContent = @"
 [CONTROL-NODE]
