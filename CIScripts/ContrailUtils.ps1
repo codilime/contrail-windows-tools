@@ -85,8 +85,30 @@ function Add-ContrailVirtualNetwork {
 function Remove-ContrailVirtualNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
-           [Parameter(Mandatory = $true)] [string] $NetworkUuid)
+           [Parameter(Mandatory = $true)] [string] $NetworkUuid,
+           [Parameter(Mandatory = $false)] [bool]  $Force = $false)
 
-    $RequestUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
-    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
+    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
+    $Network = Invoke-RestMethod -Method Get -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
+
+    $VirtualMachines = $Network.'virtual-network'.virtual_machine_interface_back_refs
+
+    if ($VirtualMachines -And !$Force) {
+        Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
+    }
+
+    # First we have to remove resources referred by network instance in correct order:
+    #   - Instance IPs
+    #   - Virtual machines
+    $IpInstances = $Network.'virtual-network'.instance_ip_back_refs
+    foreach($IpInstance in $IpInstances) {
+        Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+    }
+
+    foreach($VirtualMachine in $VirtualMachines) {
+        Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+    }
+
+    # Now it is safe to remove network
+    Invoke-RestMethod -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
 }

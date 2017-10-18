@@ -38,7 +38,7 @@ function Test-DockerMultiTenancy {
         return "testnetwork-" + -join ((0x30..0x39) + ( 0x41..0x5A) + ( 0x61..0x7A) | Get-Random -Count 8 | % {[char]$_})
     }
 
-    function SetUpNetworksForTenants {
+    function SetUpContrailNetworksForTenants {
         Param ([Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
             [Parameter(Mandatory = $true)] [String] $Authtoken,
             [Parameter(Mandatory = $true)] [String[]] $Tenants,
@@ -58,36 +58,47 @@ function Test-DockerMultiTenancy {
 
         return $Networks
     }
-
-    function CleanUpNetworks {
+    function CleanContrailResources {
         Param ([Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
             [Parameter(Mandatory = $true)] [Network[]] $Networks,
             [Parameter(Mandatory = $true)] [String] $Authtoken)
 
         ForEach ($Network in $Networks) {
             $ContrailUrl = $TestConfiguration.ControllerIP + ":" + $TestConfiguration.ControllerRestPort
-            Remove-ContrailVirtualNetwork -ContrailUrl $ContrailUrl -AuthToken $Authtoken -NetworkUuid $Network.Uuid
+            Remove-ContrailVirtualNetwork -ContrailUrl $ContrailUrl -AuthToken $Authtoken -NetworkUuid $Network.Uuid -Force $True
+        }
+    }
+
+    function CleanDockerResources {
+        Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
+            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+            [Parameter(Mandatory = $true)] [String[]] $Containers,
+            [Parameter(Mandatory = $true)] [String[]] $Networks)
+
+        foreach ($Container in $Containers) {
+            Remove-Container -Session $Session -Name $Container
+        }
+
+        foreach ($Network in $DockerNetworks) {
+            Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network
         }
     }
 
     function Test-DifferentTenantsSameIp {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+            [Parameter(Mandatory = $true)] [String] $Authtoken)
 
         Write-Host "===> Running: Test-DifferentTenantsSameIp"
-
-        Write-Host "======> Given environment with networks for different tenants"
-        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        $ExpectedIPAddress = "10.0.0.100"
-        $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", $ExpectedIPAddress, $ExpectedIPAddress)
-        $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
-        $Authtoken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
-            -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
-        
-        $Networks = SetUpNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants @("pm-1", "pm-2") `
-            -SubnetConfig $SubnetConfig
         $Containers = @()
         $DockerNetworks = @()
+        Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
+        $Tenants = @("MultiTenant-A", "MultiTenant-B")
+        $ExpectedIPAddress = "10.0.0.100"
+        Write-Host "======> Given environment with networks one available IP (" $ExpectedIPAddress ") for different tenants: " $Tenants
+        $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", $ExpectedIPAddress, $ExpectedIPAddress)
+        $Networks = SetUpContrailNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants $Tenants `
+            -SubnetConfig $SubnetConfig
         Try {
             Write-Host "======> When docker networks are created for each tenant"
             foreach ($Network in $Networks) {
@@ -105,29 +116,26 @@ function Test-DockerMultiTenancy {
             foreach ($Container in $Containers) {
                 Assert-IsContainerIpEqualToExpectedValue -Session $Session -ContainerName $Container -ExpectedIPAddress $ExpectedIPAddress
             }
+
+            Write-Host "======> Clean up"
+            CleanDockerResources -Session $Session -TestConfiguration $TestConfiguration -Containers $Containers -Networks $Networks
         }
         Finally {
-            # Regardless result of test result clean up created networks and containers.
-            # It is required to remove endpoints from Contrail before network clean up
-            Write-Host "===> clean up"
-            foreach ($Container in $Containers) {
-                Remove-Container -Session $Session -Name $Container
-            }
-
-            foreach ($Network in $DockerNetworks) {
-                Remove-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network
-            }
-
-            CleanUpNetworks -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Networks $Networks
+            # Regardless result of test result clean up created resources at Contrail
+            CleanContrailResources -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Networks $Networks
         }
 
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Write-Host "===> PASSED: Test-DifferentTenantsSameIp"
     }
 
+    $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
+    $Authtoken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
+        -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
+
     $DockerMultiTenancyTestsTimeTracker = [Job]::new("Test-DockerMultiTenancy")
     $DockerMultiTenancyTestsTimeTracker.StepQuiet("Test-DifferentTenantsSameIp", {
-            Test-DifferentTenantsSameIp -Session $Session -TestConfiguration $TestConfiguration
+            Test-DifferentTenantsSameIp -Session $Session -TestConfiguration $TestConfiguration -Authtoken $Authtoken
         })
 
     $DockerMultiTenancyTestsTimeTracker.Done()
