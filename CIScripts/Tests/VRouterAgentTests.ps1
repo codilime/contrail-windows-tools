@@ -261,7 +261,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Container1Name,
                [Parameter(Mandatory = $true)] [string] $Container2Name,
-               [Parameter] [TunnelType] $TunnelType = [TunnelType]::MPLSoGRE)
+               [Parameter] [TunnelType] $TunnelType = ([TunnelType]::MPLSoGRE))
         Write-Host "======> Given Docker Driver and Extension are running"
 
         # 1st compute node
@@ -535,9 +535,9 @@ function Test-VRouterAgentIntegration {
             # }
             # $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
             # $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
-            # try {
+            # Try {
                 Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType ([TunnelType]::MPLSoUDP)
-            # } finally {
+            # } Finally {
             #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
             #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
             # }
