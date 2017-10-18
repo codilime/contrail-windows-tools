@@ -95,7 +95,8 @@ function Test-DockerMultiTenancy {
         Initialize-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         $Tenants = @("MultiTenant-A", "MultiTenant-B")
         $ExpectedIPAddress = "10.0.0.100"
-        Write-Host "======> Given environment with networks one available IP (" $ExpectedIPAddress ") for different tenants: " $Tenants
+
+        Write-Host "======> Given environment with networks for different tenants: " $Tenants " with one available IP (" $ExpectedIPAddress ") in each one"
         $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", $ExpectedIPAddress, $ExpectedIPAddress)
         $Networks = SetUpContrailNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants $Tenants `
             -SubnetConfig $SubnetConfig
