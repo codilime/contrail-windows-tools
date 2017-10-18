@@ -513,6 +513,7 @@ function Test-VRouterAgentIntegration {
             Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType [TunnelType]::MPLSoGRE
             Write-Host "===> PASSED: Test-ICMPoMPLSoGRE"
         })
+    }
 
     function Test-ICMPoMPLSoUDP {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
@@ -524,6 +525,7 @@ function Test-VRouterAgentIntegration {
             # TODO(mc): Add-ContrailVirtualRouter
             Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType [TunnelType]::MPLSoUDP
             # TODO(mc): Finally Remove-ContrailVirtualRouter
+            # check vrfstats --get 1 output
             Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
     }
