@@ -261,7 +261,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Container1Name,
                [Parameter(Mandatory = $true)] [string] $Container2Name,
-               [Parameter] [TunnelType] $TunnelType = ([TunnelType]::MPLSoGRE))
+               [TunnelType] $TunnelType = ([TunnelType]::MPLSoGRE))
         Write-Host "======> Given Docker Driver and Extension are running"
 
         # 1st compute node
