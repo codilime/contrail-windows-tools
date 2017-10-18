@@ -22,6 +22,7 @@ class DockerDriverConfiguration {
 class TestConfiguration {
     [DockerDriverConfiguration] $DockerDriverConfiguration;
     [string] $ControllerIP;
+    [string] $ControllerUdpIP;
     [string] $ControllerHostUsername;
     [string] $ControllerHostPassword;
     [string] $AdapterName;
