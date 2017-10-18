@@ -317,7 +317,7 @@ function Clear-TestConfiguration {
 function New-AgentConfigFile {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [Parameter] [TunnelType] $TunnelType = [TunnelType]::MPLSoGRE)
+           [TunnelType] $TunnelType = ([TunnelType]::MPLSoGRE))
 
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `

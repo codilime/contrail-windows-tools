@@ -94,7 +94,6 @@ function Remove-OpenContrailNetwork {
 function Add-ContrailVirtualRouter {
     Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
-           [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $RouterName,
            [Parameter(Mandatory = $true)] [string] $RouterIp)
 
@@ -106,7 +105,7 @@ function Add-ContrailVirtualRouter {
         }
     }
 
-    $RequestUrl = $OpenContrailUrl + "/virtual-routers"
+    $RequestUrl = $ContrailUrl + "/virtual-routers"
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
         -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth 100 $Request) `
 
@@ -118,6 +117,6 @@ function Remove-ContrailVirtualRouter {
            [Parameter(Mandatory = $true)] [string] $AuthToken,
            [Parameter(Mandatory = $true)] [string] $RouterUuid)
 
-    $RequestUrl = $OpenContrailUrl + "/virtual-router/" + $RouterUuid
+    $RequestUrl = $ContrailUrl + "/virtual-router/" + $RouterUuid
     Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
 }

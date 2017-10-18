@@ -510,7 +510,7 @@ function Test-VRouterAgentIntegration {
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoGRE"
-            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType [TunnelType]::MPLSoGRE
+            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType ([TunnelType]::MPLSoGRE)
             Write-Host "===> PASSED: Test-ICMPoMPLSoGRE"
         })
     }
@@ -522,9 +522,25 @@ function Test-VRouterAgentIntegration {
         
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoUDP"
-            # TODO(mc): Add-ContrailVirtualRouter
-            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType [TunnelType]::MPLSoUDP
-            # TODO(mc): Finally Remove-ContrailVirtualRouter
+            # TODO(mc) change to $TestConfiguration.ControllerRestPort after rebase
+            # $ContrailUrl = $TestConfiguration.ControllerUdpIP + ":8082"
+            # $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
+            # $AuthToken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
+            #     -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
+            # $RouterIp1 = Invoke-Command -Session $Session1 -ScriptBlock {
+            #     return $((Get-NetIPAddress -InterfaceAlias $TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
+            # }
+            # $RouterIp2 = Invoke-Command -Session $Session2 -ScriptBlock {
+            #     return $((Get-NetIPAddress -InterfaceAlias $TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
+            # }
+            # $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
+            # $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
+            # try {
+                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType ([TunnelType]::MPLSoUDP)
+            # } finally {
+            #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
+            #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
+            # }
             # check vrfstats --get 1 output
             Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
