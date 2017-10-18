@@ -101,13 +101,13 @@ function Test-DockerMultiTenancy {
         $Networks = SetUpContrailNetworksForTenants -TestConfiguration $TestConfiguration -AuthToken $Authtoken -Tenants $Tenants `
             -SubnetConfig $SubnetConfig
         Try {
-            Write-Host "======> When docker networks are created for each tenant"
+            Write-Host "======> When docker network is created for each tenant"
             foreach ($Network in $Networks) {
                 $DockerNetworks += New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name -TenantName $Network.TenantName `
                     -Network $Network.Name
             }
 
-            Write-Host "======> When containers for each network are created and run"
+            Write-Host "======> When container is created and run for each network"
             foreach ($Network in $DockerNetworks) {
                 # Using the same container name as name of network
                 $Containers += New-Container -Session $Session -NetworkName $Network
