@@ -22,7 +22,6 @@ class DockerDriverConfiguration {
 class TestConfiguration {
     [DockerDriverConfiguration] $DockerDriverConfiguration;
     [string] $ControllerIP;
-    [string] $ControllerUdpIP;
     [string] $ControllerHostUsername;
     [string] $ControllerHostPassword;
     [string] $AdapterName;
@@ -30,12 +29,6 @@ class TestConfiguration {
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
-}
-
-enum TunnelType {
-    MPLSoGRE;
-    MPLSoUDP;
-    VxLAN;
 }
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -316,8 +309,7 @@ function Clear-TestConfiguration {
 
 function New-AgentConfigFile {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-           [TunnelType] $TunnelType = ([TunnelType]::MPLSoGRE))
+           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
@@ -330,7 +322,6 @@ function New-AgentConfigFile {
 
     # Prepare parameters for script block
     $ControllerIP = $TestConfiguration.ControllerIP
-    $ControllerUdpIP = $TestConfiguration.ControllerUdpIP
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
@@ -338,14 +329,8 @@ function New-AgentConfigFile {
 
     $DestConfigFilePath = $TestConfiguration.AgentConfigFilePath
 
-    if ($TunnelType -eq [TunnelType]::MPLSoGRE) {
-        $DesiredControllerIP = $ControllerIP
-    } else {
-        $DesiredControllerIP = $ControllerUdpIP
-    }
-
     Invoke-Command -Session $Session -ScriptBlock {
-        $DesiredControllerIP = $Using:DesiredControllerIP
+        $ControllerIP = $Using:ControllerIP
         $VHostIfName = $Using:VHostIfName
         $VHostIfIndex = $Using:VHostIfIndex
         $PhysIfName = $Using:PhysIfName
@@ -357,10 +342,10 @@ function New-AgentConfigFile {
 
         $ConfigFileContent = @"
 [CONTROL-NODE]
-server=$DesiredControllerIP
+server=$ControllerIP
 
 [DISCOVERY]
-server=$DesiredControllerIP
+server=$ControllerIP
 
 [VIRTUAL-HOST-INTERFACE]
 name=$VHostIfName

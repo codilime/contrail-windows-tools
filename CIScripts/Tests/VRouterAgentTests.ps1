@@ -260,8 +260,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
                [Parameter(Mandatory = $true)] [string] $Container1Name,
-               [Parameter(Mandatory = $true)] [string] $Container2Name,
-               [TunnelType] $TunnelType = ([TunnelType]::MPLSoGRE))
+               [Parameter(Mandatory = $true)] [string] $Container2Name)
         Write-Host "======> Given Docker Driver and Extension are running"
 
         # 1st compute node
@@ -279,13 +278,13 @@ function Test-VRouterAgentIntegration {
         Write-Host "======> Given Agent is running"
 
         # 1st compute node
-        New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration -TunnelType $TunnelType
+        New-AgentConfigFile -Session $Session1 -TestConfiguration $TestConfiguration
         Enable-AgentService -Session $Session1
         Assert-IsAgentServiceEnabled -Session $Session1
 
         # 2nd compute node (if there actually is more than 1 compute node)
         if ($Session1 -ne $Session2) {
-           New-AgentConfigFile -Session $Session2 -TestConfiguration $TestConfiguration -TunnelType $TunnelType
+           New-AgentConfigFile -Session $Session2 -TestConfiguration $TestConfiguration
            Enable-AgentService -Session $Session2
            Assert-IsAgentServiceEnabled -Session $Session2
         }
@@ -510,7 +509,7 @@ function Test-VRouterAgentIntegration {
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoGRE"
-            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType ([TunnelType]::MPLSoGRE)
+            Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
             Write-Host "===> PASSED: Test-ICMPoMPLSoGRE"
         })
     }
@@ -519,9 +518,12 @@ function Test-VRouterAgentIntegration {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-        
+
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoUDP"
+
+            $TestConfiguration.ControllerIP = $Env:CONTROLLER_IP_UDP
+            $TestConfiguration.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
             # TODO(mc) change to $TestConfiguration.ControllerRestPort after rebase
             # $ContrailUrl = $TestConfiguration.ControllerUdpIP + ":8082"
             # $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
@@ -536,7 +538,7 @@ function Test-VRouterAgentIntegration {
             # $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
             # $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
             # Try {
-                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2" -TunnelType ([TunnelType]::MPLSoUDP)
+                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
             # } Finally {
             #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
             #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
