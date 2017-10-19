@@ -17,6 +17,10 @@ class DockerDriverConfiguration {
     [string] $Password;
     [string] $AuthUrl;
     [TenantConfiguration] $TenantConfiguration;
+
+    [Object]ShallowCopy() {
+        return $this.MemberwiseClone()
+    }
 }
 
 class TestConfiguration {
@@ -29,6 +33,10 @@ class TestConfiguration {
     [string] $VMSwitchName;
     [string] $ForwardingExtensionName;
     [string] $AgentConfigFilePath;
+
+    [Object]ShallowCopy() {
+        return $this.MemberwiseClone()
+    }
 }
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60

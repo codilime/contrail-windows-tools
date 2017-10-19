@@ -522,8 +522,10 @@ function Test-VRouterAgentIntegration {
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoUDP"
 
-            $TestConfiguration.ControllerIP = $Env:CONTROLLER_IP_UDP
-            $TestConfiguration.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
+            $TestConfigurationTemp = $TestConfiguration.ShallowCopy()
+            $TestConfigurationTemp.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
+            $TestConfigurationTemp.ControllerIP = $Env:CONTROLLER_IP_UDP
+            $TestConfigurationTemp.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
             # TODO(mc) change to $TestConfiguration.ControllerRestPort after rebase
             # $ContrailUrl = $TestConfiguration.ControllerUdpIP + ":8082"
             # $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
@@ -538,7 +540,7 @@ function Test-VRouterAgentIntegration {
             # $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
             # $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
             # Try {
-                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
+                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
             # } Finally {
             #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
             #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
