@@ -526,26 +526,27 @@ function Test-VRouterAgentIntegration {
             $TestConfigurationTemp.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
             $TestConfigurationTemp.ControllerIP = $Env:CONTROLLER_IP_UDP
             $TestConfigurationTemp.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
-            # TODO(mc) change to $TestConfiguration.ControllerRestPort after rebase
-            # $ContrailUrl = $TestConfiguration.ControllerUdpIP + ":8082"
-            # $ContrailCredentials = $TestConfiguration.DockerDriverConfiguration
-            # $AuthToken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
-            #     -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
-            # $RouterIp1 = Invoke-Command -Session $Session1 -ScriptBlock {
-            #     return $((Get-NetIPAddress -InterfaceAlias $TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
-            # }
-            # $RouterIp2 = Invoke-Command -Session $Session2 -ScriptBlock {
-            #     return $((Get-NetIPAddress -InterfaceAlias $TestConfiguration.VHostName -AddressFamily IPv4).IpAddress)
-            # }
-            # $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
-            # $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
-            # Try {
-                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
-            # } Finally {
-            #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
-            #     Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
-            # }
-            # check vrfstats --get 1 output
+
+            # TODO(mc) change to $TestConfigurationTemp.ControllerRestPort after rebase
+            $ContrailUrl = $TestConfigurationTemp.ControllerIP + ":8082"
+            $ContrailCredentials = $TestConfigurationTemp.DockerDriverConfiguration
+            $AuthToken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
+                -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
+            $RouterIp1 = Invoke-Command -Session $Session1 -ScriptBlock {
+                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfigurationTemp.VHostName -AddressFamily IPv4).IpAddress)
+            }
+            $RouterIp2 = Invoke-Command -Session $Session2 -ScriptBlock {
+                return $((Get-NetIPAddress -InterfaceAlias $Using:TestConfigurationTemp.VHostName -AddressFamily IPv4).IpAddress)
+            }
+            $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
+            $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
+            Try {
+              Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
+            } Finally {
+                Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
+                Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
+            }
+            # TODO(mc) check vrfstats --get 1 output
             Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
     }
