@@ -1,3 +1,5 @@
+$CONVERT_TO_JSON_MAX_DEPTH = 100
+
 function Get-AccessTokenFromKeystone {
     Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
            [Parameter(Mandatory = $true)] [string] $TenantName,
@@ -16,7 +18,7 @@ function Get-AccessTokenFromKeystone {
 
     $AuthUrl += "/tokens"
     $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
-        -Body (ConvertTo-Json $Request)
+        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
     return $Response.access.token.id
 }
 
@@ -76,7 +78,7 @@ function Add-ContrailVirtualNetwork {
 
     $RequestUrl = $ContrailUrl + "/virtual-networks"
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth 10 $Request) `
+        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
 
     return $Response.'virtual-network'.'uuid'
 }
@@ -93,20 +95,22 @@ function Remove-ContrailVirtualNetwork {
     $VirtualMachines = $Network.'virtual-network'.virtual_machine_interface_back_refs
     $IpInstances = $Network.'virtual-network'.instance_ip_back_refs
 
-    if (($VirtualMachines -or $IpInstances) -And !$Force) {
-        Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
-        return
-    }
+    if ($VirtualMachines -or $IpInstances) {
+        if (!$Force) {
+            Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
+            return
+        }
 
-    # First we have to remove resources referred by network instance in correct order:
-    #   - Instance IPs
-    #   - Virtual machines
-    ForEach ($IpInstance in $IpInstances) {
-        Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
-    }
+        # First we have to remove resources referred by network instance in correct order:
+        #   - Instance IPs
+        #   - Virtual machines
+        ForEach ($IpInstance in $IpInstances) {
+            Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+        }
 
-    ForEach ($VirtualMachine in $VirtualMachines) {
-        Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+        ForEach ($VirtualMachine in $VirtualMachines) {
+            Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+        }
     }
 
     # We can now remove the network
