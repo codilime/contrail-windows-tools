@@ -106,7 +106,7 @@ function Test-DockerMultiTenancy {
                 Write-Host "======> When docker network is created and docker container is run for each tenant"
                 ForEach ($Network in $Networks) {
                     $DockerNetworks += New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration -Name $Network.Name `
-                    -TenantName $Network.TenantName -Network $Network.Name
+                        -TenantName $Network.TenantName -Network $Network.Name
                 }
 
                 ForEach ($Network in $DockerNetworks) {
