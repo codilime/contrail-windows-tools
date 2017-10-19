@@ -541,12 +541,16 @@ function Test-VRouterAgentIntegration {
             $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
             $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
             Try {
-              Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
+                Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
             } Finally {
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
             }
-            # TODO(mc) check vrfstats --get 1 output
+            # TODO(mc) properly test vrfstats output
+            $vrfstatsOutput = Invoke-Command -Session $Session1 -ScriptBlock {
+                return $(vrfstats --get 1)
+            }
+            Write-Host $vrfstatsOutput
             Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
     }
