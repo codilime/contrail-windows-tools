@@ -133,7 +133,7 @@ function Add-ContrailVirtualRouter {
 
     $RequestUrl = $ContrailUrl + "/virtual-routers"
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth 100 $Request) `
+        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
 
     return $Response.'virtual-router'.'uuid'
 }
@@ -144,5 +144,5 @@ function Remove-ContrailVirtualRouter {
            [Parameter(Mandatory = $true)] [string] $RouterUuid)
 
     $RequestUrl = $ContrailUrl + "/virtual-router/" + $RouterUuid
-    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
+    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
 }

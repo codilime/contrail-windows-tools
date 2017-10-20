@@ -527,8 +527,7 @@ function Test-VRouterAgentIntegration {
             $TestConfigurationTemp.ControllerIP = $Env:CONTROLLER_IP_UDP
             $TestConfigurationTemp.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_UDP
 
-            # TODO(mc) change to $TestConfigurationTemp.ControllerRestPort after rebase
-            $ContrailUrl = $TestConfigurationTemp.ControllerIP + ":8082"
+            $ContrailUrl = $TestConfigurationTemp.ControllerIP + ":" + $TestConfigurationTemp.ControllerRestPort
             $ContrailCredentials = $TestConfigurationTemp.DockerDriverConfiguration
             $AuthToken = Get-AccessTokenFromKeystone -AuthUrl $ContrailCredentials.AuthUrl -TenantName $ContrailCredentials.TenantConfiguration.Name `
                 -Username $ContrailCredentials.Username -Password $ContrailCredentials.Password
