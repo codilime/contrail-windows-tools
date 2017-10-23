@@ -140,17 +140,18 @@ function Invoke-ExtensionBuild {
         Copy-Item -Recurse third_party\cmocka vrouter\test\
     })
 
+    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
 
     $Job.Step("Building Extension and Utils", {
-        $BuildModeOption = "--optimization=" + $(if ($ReleaseMode) { "production" } else { "debug" })
+        $BuildModeOption = "--optimization=" + $BuildMode
         scons $BuildModeOption vrouter
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
         }
     })
 
-    $vRouterMSI = "build\debug\vrouter\extension\vRouter.msi"
-    $utilsMSI = "build\debug\vrouter\utils\utils.msi"
+    $vRouterMSI = "build\{0}\vrouter\extension\vRouter.msi" -f $BuildMode
+    $utilsMSI = "build\{0}\vrouter\utils\utils.msi" -f $BuildMode
 
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
