@@ -539,17 +539,29 @@ function Test-VRouterAgentIntegration {
             }
             $RouterUuid1 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session1.ComputerName -RouterIp RouterIp1
             $RouterUuid2 = Add-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterName $Session2.ComputerName -RouterIp RouterIp2
+
             Try {
                 Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfigurationTemp -Container1Name "container1" -Container2Name "container2"
             } Finally {
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
             }
-            # TODO(mc) properly test vrfstats output
-            $vrfstatsOutput = Invoke-Command -Session $Session1 -ScriptBlock {
-                return $(vrfstats --get 1)
+
+            $wasMplsUdpUsed = Invoke-Command -Session $Session1 -ScriptBlock {
+                $vrfstatsOutput = $(vrfstats --get 1)
+                $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+                $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+                $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+                if ($mplsUdpPktCount -gt 0 -and $mplsGrePktCount -eq 0 -and $vxlanPktCount -eq 0) {
+                    return $true
+                } else {
+                    return $false
+                }
             }
-            Write-Host $vrfstatsOutput
+            if (!$wasMplsUdpUsed) {
+                throw "Containers pinged themselves correctly but used the wrong type of tunnel"
+            }
+
             Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
         })
     }
