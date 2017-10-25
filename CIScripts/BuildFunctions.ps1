@@ -141,7 +141,7 @@ function Invoke-ExtensionBuild {
 
     
     $Job.Step("Building Extension and Utils", {
-        scons vrouter
+        scons vrouter --msvc-version='14.0'
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
         }
