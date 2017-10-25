@@ -502,6 +502,23 @@ function Test-VRouterAgentIntegration {
         })
     }
 
+    function Get-VrfStats {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+        $VrfStats = Invoke-Command -Session $Session -ScriptBlock {
+            $vrfstatsOutput = $(vrfstats --get 1)
+            $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+            $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+            $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+            return @{
+                MplsUdpPktCount = $mplsUdpPktCount
+                MplsGrePktCount = $mplsGrePktCount
+                VxlanPktCount = $vxlanPktCount
+            }
+        }
+        return $VrfStats
+    }
+
     function Test-ICMPoMPLSoGRE {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
@@ -509,7 +526,17 @@ function Test-VRouterAgentIntegration {
 
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoGRE"
+
+            Write-Host "======> Given Controller with default (MPLSoGRE) configuration"
             Test-Ping -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration -Container1Name "container1" -Container2Name "container2"
+
+            Write-Host "======> Then GRE tunnel is used"
+            $VrfStats = Get-VrfStats -Session $Session1
+            if ($VrfStats.MplsGrePktCount -gt 0 -and $VrfStats.MplsUdpPktCount -eq 0 -and $VrfStats.VxlanPktCount -eq 0) {
+                throw "Containers pinged themselves correctly but used the wrong type of tunnel (VrfStats: Udp = {0}, Gre = {1}, Vxlan = {2})" `
+                    -f $VrfStats.MplsUdpPktCount, $VrfStats.MplsGrePktCount, $VrfStats.VxlanPktCount
+            }
+
             Write-Host "===> PASSED: Test-ICMPoMPLSoGRE"
         })
     }
@@ -522,6 +549,7 @@ function Test-VRouterAgentIntegration {
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-ICMPoMPLSoUDP"
 
+            Write-Host "======> Given Controller with MPLSoUPD configuration"
             $TestConfigurationTemp = $TestConfiguration.ShallowCopy()
             $TestConfigurationTemp.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
             $TestConfigurationTemp.ControllerIP = $Env:CONTROLLER_IP_UDP
@@ -546,20 +574,11 @@ function Test-VRouterAgentIntegration {
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid1
                 Remove-ContrailVirtualRouter -ContrailUrl $ContrailUrl -AuthToken $AuthToken -RouterUuid $RouterUuid2
             }
-
-            $wasMplsUdpUsed = Invoke-Command -Session $Session1 -ScriptBlock {
-                $vrfstatsOutput = $(vrfstats --get 1)
-                $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
-                $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
-                $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
-                if ($mplsUdpPktCount -gt 0 -and $mplsGrePktCount -eq 0 -and $vxlanPktCount -eq 0) {
-                    return $true
-                } else {
-                    return $false
-                }
-            }
-            if (!$wasMplsUdpUsed) {
-                throw "Containers pinged themselves correctly but used the wrong type of tunnel"
+            Write-Host "======> Then UDP tunnel is used"
+            $VrfStats = Get-VrfStats -Session $Session1
+            if ($VrfStats.MplsUdpPktCount -gt 0 -and $VrfStats.MplsGrePktCount -eq 0 -and $VrfStats.VxlanPktCount -eq 0) {
+                throw "Containers pinged themselves correctly but used the wrong type of tunnel (VrfStats: Udp = {0}, Gre = {1}, Vxlan = {2})" `
+                    -f $VrfStats.MplsUdpPktCount, $VrfStats.MplsGrePktCount, $VrfStats.VxlanPktCount
             }
 
             Write-Host "===> PASSED: Test-ICMPoMPLSoUDP"
