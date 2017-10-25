@@ -532,7 +532,7 @@ function Test-VRouterAgentIntegration {
 
             Write-Host "======> Then GRE tunnel is used"
             $VrfStats = Get-VrfStats -Session $Session1
-            if ($VrfStats.MplsGrePktCount -gt 0 -and $VrfStats.MplsUdpPktCount -eq 0 -and $VrfStats.VxlanPktCount -eq 0) {
+            if ($VrfStats.MplsGrePktCount -eq 0 -or $VrfStats.MplsUdpPktCount -ne 0 -or $VrfStats.VxlanPktCount -ne 0) {
                 throw "Containers pinged themselves correctly but used the wrong type of tunnel (VrfStats: Udp = {0}, Gre = {1}, Vxlan = {2})" `
                     -f $VrfStats.MplsUdpPktCount, $VrfStats.MplsGrePktCount, $VrfStats.VxlanPktCount
             }
@@ -576,7 +576,7 @@ function Test-VRouterAgentIntegration {
             }
             Write-Host "======> Then UDP tunnel is used"
             $VrfStats = Get-VrfStats -Session $Session1
-            if ($VrfStats.MplsUdpPktCount -gt 0 -and $VrfStats.MplsGrePktCount -eq 0 -and $VrfStats.VxlanPktCount -eq 0) {
+            if ($VrfStats.MplsUdpPktCount -eq 0 -or $VrfStats.MplsGrePktCount -ne 0 -or $VrfStats.VxlanPktCount -ne 0) {
                 throw "Containers pinged themselves correctly but used the wrong type of tunnel (VrfStats: Udp = {0}, Gre = {1}, Vxlan = {2})" `
                     -f $VrfStats.MplsUdpPktCount, $VrfStats.MplsGrePktCount, $VrfStats.VxlanPktCount
             }
