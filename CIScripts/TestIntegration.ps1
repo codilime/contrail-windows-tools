@@ -22,9 +22,9 @@ for ($i = 0; $i -lt $VMsNeeded; $i++) {
 Write-Host "Starting Testbeds:"
 $VMNames.ForEach({ Write-Host $_ })
 
-$Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -PowerCLIScriptPath $PowerCLIScriptPath `
-    -VIServerAccessData $VIServerAccessData -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials `
-    -ArtifactsDir $ArtifactsDir -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes
+$Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
+    -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials -ArtifactsDir $ArtifactsDir `
+    -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes
 
 Write-Host "Started Testbeds:"
 $Sessions.ForEach({ Write-Host $_.ComputerName })
@@ -42,11 +42,23 @@ $MultipleSubnetsNetworkConfiguration = [NetworkConfiguration] @{
     Subnets = @($Env:MULTIPLE_SUBNETS_NETWORK_SUBNET1, $Env:MULTIPLE_SUBNETS_NETWORK_SUBNET2)
 }
 
+$NetworkWithPolicy1Configuration = [NetworkConfiguration] @{
+    Name = $Env:NETWORK_WITH_POLICY_1_NAME
+    Subnets = @($Env:NETWORK_WITH_POLICY_1_SUBNET)
+}
+
+$NetworkWithPolicy2Configuration = [NetworkConfiguration] @{
+    Name = $Env:NETWORK_WITH_POLICY_2_NAME
+    Subnets = @($Env:NETWORK_WITH_POLICY_2_SUBNET)
+}
+
 $TenantConfiguration = [TenantConfiguration] @{
     Name = $Env:DOCKER_NETWORK_TENANT_NAME;
     DefaultNetworkName = $SingleSubnetNetworkConfiguration.Name;
     SingleSubnetNetwork = $SingleSubnetNetworkConfiguration;
     MultipleSubnetsNetwork = $MultipleSubnetsNetworkConfiguration;
+    NetworkWithPolicy1 = $NetworkWithPolicy1Configuration;
+    NetworkWithPolicy2 = $NetworkWithPolicy2Configuration;
 }
 
 $DockerDriverConfiguration = [DockerDriverConfiguration] @{
@@ -58,6 +70,7 @@ $DockerDriverConfiguration = [DockerDriverConfiguration] @{
 
 $TestConfiguration = [TestConfiguration] @{
     ControllerIP = $Env:CONTROLLER_IP;
+    ControllerRestPort = 8082
     ControllerHostUsername = $Env:CONTROLLER_HOST_USERNAME;
     ControllerHostPassword = $Env:CONTROLLER_HOST_PASSWORD;
     AdapterName = $Env:ADAPTER_NAME;
@@ -94,12 +107,14 @@ Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfigurati
 Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
 Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
 Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
+Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
+Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
 if($Env:RUN_DRIVER_TESTS -eq "1") {
     Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
 }
 
 Write-Host "Removing VMs..."
-Remove-TestbedVMs -VMNames $VMNames -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+Remove-TestbedVMs -VMNames $VMNames -VIServerAccessData $VIServerAccessData
 
 $Job.Done()

@@ -8,6 +8,8 @@ class TenantConfiguration {
     [string] $DefaultNetworkName;
     [NetworkConfiguration] $SingleSubnetNetwork;
     [NetworkConfiguration] $MultipleSubnetsNetwork;
+    [NetworkConfiguration] $NetworkWithPolicy1;
+    [NetworkConfiguration] $NetworkWithPolicy2;
 }
 
 class DockerDriverConfiguration {
@@ -20,6 +22,7 @@ class DockerDriverConfiguration {
 class TestConfiguration {
     [DockerDriverConfiguration] $DockerDriverConfiguration;
     [string] $ControllerIP;
+    [int] $ControllerRestPort
     [string] $ControllerHostUsername;
     [string] $ControllerHostPassword;
     [string] $AdapterName;
@@ -211,10 +214,22 @@ function Assert-IsAgentServiceDisabled {
     throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
 }
 
+function Assert-AgentProcessCrashed {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    $Res = Invoke-Command -Session $Session -ScriptBlock {
+        return $(Get-EventLog -LogName "System" -EntryType "Error" -Source "Service Control Manager" -Newest 10 | Where {$_.Message -match "The ContrailAgent service terminated unexpectedly" -AND $_.TimeGenerated -gt (Get-Date).AddSeconds(-5)})
+    }
+    if(!$Res) {
+        throw "Agent process didn't crash. EXPECTED: Agent process crashed"
+    }
+}
+
 function New-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
            [Parameter(Mandatory = $false)] [string] $Name,
+           [Parameter(Mandatory = $false)] [string] $TenantName,
            [Parameter(Mandatory = $false)] [string] $Network,
            [Parameter(Mandatory = $false)] [string] $Subnet)
 
@@ -228,16 +243,18 @@ function New-DockerNetwork {
         $Network = $Configuration.DefaultNetworkName
     }
 
+    if (!$TenantName) {
+        $TenantName = $Configuration.Name
+    }
+
     Write-Host "Creating network $Name"
 
     $NetworkID = Invoke-Command -Session $Session -ScriptBlock {
-        $TenantName = ($Using:Configuration).Name
-
         if ($Using:Subnet) {
-            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$Using:Network --subnet $Using:Subnet $Using:Name)
+            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$Using:TenantName -o network=$Using:Network --subnet $Using:Subnet $Using:Name)
         }
         else {
-            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$TenantName -o network=$Using:Network $Using:Name)
+            return $(docker network create --ipam-driver windows --driver Contrail -o tenant=$Using:TenantName -o network=$Using:Network $Using:Name)
         }
     }
 

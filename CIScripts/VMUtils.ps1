@@ -13,8 +13,7 @@ class VIServerAccessData {
 }
 
 function Initialize-VIServer {
-    Param ([Parameter(Mandatory = $true)] [string] $PowerCLIScriptPath,
-           [Parameter(Mandatory = $true)] [VIServerAccessData] $VIServerAccessData)
+    Param ([Parameter(Mandatory = $true)] [VIServerAccessData] $VIServerAccessData)
 
     Push-Location
 
@@ -34,11 +33,6 @@ function Initialize-VIServer {
     }
 
     try {
-        $Res = Get-Command -Name Connect-VIServer -CommandType Cmdlet -ErrorAction SilentlyContinue
-        if (-Not $Res) {
-            & "$PowerCLIScriptPath" | Out-Null
-        }
-
         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
         Set-PowerCLIConfiguration -DefaultVIServerMode Single -Confirm:$false | Out-Null
 
@@ -55,7 +49,6 @@ function Initialize-VIServer {
 function New-TestbedVMs {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of created VMs")] [string[]] $VMNames,
            [Parameter(Mandatory = $true, HelpMessage = "Flag indicating if we should install all artifacts on spawned VMs")] [bool] $InstallArtifacts,
-           [Parameter(Mandatory = $true, HelpMessage = "Path to VMWare PowerCLI initialization script")] [string] $PowerCLIScriptPath,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData,
            [Parameter(Mandatory = $true, HelpMessage = "Settings required for creating new VM")] [NewVMCreationSettings] $VMCreationSettings,
            [Parameter(Mandatory = $true, HelpMessage = "Credentials required to access created VMs")] [System.Management.Automation.PSCredential] $VMCredentials,
@@ -165,10 +158,11 @@ function New-TestbedVMs {
         Write-Host "Copying Docker driver installer"
         Copy-Item -ToSession $Session -Path "docker_driver\docker-driver.msi" -Destination C:\Artifacts\
 
-        Write-Host "Copying Agent"
+        Write-Host "Copying Agent and Contrail vRouter API"
         Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
+        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-api-1.0.tar.gz" -Destination C:\Artifacts\
 
-        Write-Host "Copying Agent test executables and dlls"
+        Write-Host "Copying Agent test executables"
         $AgentTextExecutables = Get-ChildItem .\agent | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
 
         #Test executables from schema/test do not follow the convention
@@ -179,7 +173,6 @@ function New-TestbedVMs {
             Write-Host "    Copying $TestExecutable"
             Copy-Item -ToSession $Session -Path "agent\$TestExecutable" -Destination C:\Artifacts\
         }
-        Copy-Item -ToSession $Session -Path "agent\libxml2.dll" -Destination C:\Artifacts\
 
         Write-Host "Copying test configuration files and test data"
         Copy-Item -ToSession $Session -Path "agent\vnswa_cfg.ini" -Destination C:\Artifacts\
@@ -194,6 +187,9 @@ function New-TestbedVMs {
         Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination C:\Artifacts\ # TODO: Remove after JW-798
 
         Invoke-Command -Session $Session -ScriptBlock {
+            Write-Host "Installing Contrail vRouter API"
+            pip2 install C:\Artifacts\contrail-vrouter-api-1.0.tar.gz | Out-Null
+
             Write-Host "Installing vRouter Extension"
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
             Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
@@ -220,7 +216,7 @@ function New-TestbedVMs {
     }
 
     Write-Host "Connecting to VIServer"
-    Initialize-VIServer -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+    Initialize-VIServer -VIServerAccessData $VIServerAccessData
 
     Write-Host "Starting VMs"
     $VMNames.ForEach({ New-StartedVM -VMName $_ -VMCreationSettings $VMCreationSettings })
@@ -247,10 +243,9 @@ function New-TestbedVMs {
 
 function Remove-TestbedVMs {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of VMs")] [string[]] $VMNames,
-           [Parameter(Mandatory = $true, HelpMessage = "Path to VMWare PowerCLI initialization script")] [string] $PowerCLIScriptPath,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData)
 
-    Initialize-VIServer -PowerCLIScriptPath $PowerCLIScriptPath -VIServerAccessData $VIServerAccessData
+    Initialize-VIServer -VIServerAccessData $VIServerAccessData
 
     $VMNames.ForEach({
         Write-Host "Removing $_ from datastore"
