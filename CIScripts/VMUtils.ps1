@@ -63,14 +63,24 @@ function New-TestbedVMs {
 
         Write-Host "Creating and starting $VMName"
         $ResourcePool = Get-ResourcePool -Name $VMCreationSettings.ResourcePoolName
-        $Template = Get-Template -Name $VMCreationSettings.TemplateName
+        $Template = Get-VM -Name $VMCreationSettings.TemplateName
         $CustomizationSpec = Get-OSCustomizationSpec -Name $VMCreationSettings.CustomizationSpecName
 
         $AllDatastores = Get-Datastore -Name $VMCreationSettings.DatastoresList
         $EmptiestDatastore = ($AllDatastores | Sort-Object -Property FreeSpaceGB -Descending)[0]
 
-        New-VM -Name $VMName -Template $Template -Datastore $EmptiestDatastore -ResourcePool $ResourcePool -Location $VMCreationSettings.NewVMLocation `
-            -OSCustomizationSpec $CustomizationSpec -ErrorAction Stop -Verbose | Out-Null
+        if (!$Template) {
+            Set-Template -Template $VMCreationSettings.TemplateName -ToVM
+            $Template = Get-VM -Name $VMCreationSettings.TemplateName
+        }
+        $BaseSnapshot = Get-Snapshot -VM $Template
+        if ($BaseSnapshot.count -ne 1) {
+            Write-Host 'VM base image should have one snapshot for linked clones.'
+            exit 1
+        }
+
+        New-VM -VM $Template -Name $VMName -LinkedClone -ReferenceSnapshot $BaseSnapshot -Datastore $EmptiestDatastore -ResourcePool $ResourcePool `
+        -Location $VMCreationSettings.NewVMLocation -OSCustomizationSpec $CustomizationSpec -ErrorAction Stop -Verbose | Out-Null
         #New-HardDisk -VM $vm -CapacityGB 2 -Datastore DUMP -StorageFormat thin -Controller (Get-ScsiController -VM $vm) -Persistence IndependentPersistent -Verbose # TODO: Fix after JW-796
         Start-VM -VM $VMName -Confirm:$false -ErrorAction Stop -Verbose | Out-Null
     }
