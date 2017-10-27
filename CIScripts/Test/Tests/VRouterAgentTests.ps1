@@ -6,7 +6,7 @@ function Wait-RemoteFile {
            [Parameter(Mandatory = $true)] [String] $ContainerName,
            [Parameter(Mandatory = $true)] [String] $Path,
            [Parameter(Mandatory = $false)] [Int] $DelayMilliseconds = 300,
-           [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 30)
+           [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 60)
 
     Invoke-Command -Session $Session -ScriptBlock {
         $TimeoutMilliseconds = $Using:TimeoutSeconds * 1000
@@ -749,7 +749,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
         $Name = $MyInvocation.MyCommand.Name
-        
+
         $Job.StepQuiet($Name, {
             Test-Tcp `
                 -Name $Name `
@@ -760,12 +760,26 @@ function Test-VRouterAgentIntegration {
         })
     }
 
+    # Test-TcpTrafficMultipleNets doesn't actually connect (only flow is created)
+
     function Test-MultihostTcpTrafficSingleNet {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
+        $Name = $MyInvocation.MyCommand.Name
+
+        $Job.StepQuiet($Name, {
+            Test-Tcp `
+                -Name $Name `
+                -Session1 $Session1 `
+                -Session2 $Session2 `
+                -TestConfiguration $TestConfiguration `
+                -Network2 $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+         })
     }
+
+    # Test-MultihostTcpTrafficMultipleNets results in bluescreen on $Session1
 
     function Test-Tcp {
         Param ([Parameter(Mandatory = $true)] [String] $Name,
@@ -777,7 +791,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $false)] [Bool] $TestFlowInjection = $true,
                [Parameter(Mandatory = $false)] [Bool] $TestCommunication = $true,
                [Parameter(Mandatory = $false)] [Bool] $TestFlowEviction = $true)
-        
+
         if (!$Network1) {
             $Network1 = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
         }
@@ -804,7 +818,7 @@ function Test-VRouterAgentIntegration {
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         if ($Network1.Name -eq $Network2.Name) {
-            $different = " "
+            $different = ""
         } else {
             $different = " belonging to different networks"
         }
@@ -831,8 +845,8 @@ function Test-VRouterAgentIntegration {
             & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
         }
 
-        Write-Host "======> When: Container $Container1Name (network: ${Network1.Name}) is trying to"
-        Write-Host "        open TCP connection to $Container2Name (network: ${Network2.Name}, IP: $Container2IP)"
+        Write-Host "======> When: Container $Container1Name (network: $($Network1.Name) is trying to"
+        Write-Host "        open TCP connection to $Container2Name (network: $($Network2.Name), IP: $Container2IP)"
         Write-Host
 
         $Port = "1905"
@@ -840,26 +854,20 @@ function Test-VRouterAgentIntegration {
 
         Write-Host "        Setting up TCP sender and listener on containers..."
 
-        Invoke-Command -Session $Session2 -ScriptBlock {
-            $Port = $Using:Port
-            $Container1Name = $Using:Container1Name
-            $Container2Name = $Using:Container2Name
-            $Container2IP = $Using:Container2IP
-            $Message = $Using:Message
-
-            $Functions = {
-                function New-WaitFileCommand {
-                    Param ([String] $Path)
-                    return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"
-                }
+        $Functions = {
+            function New-WaitFileCommand {
+                Param ([String] $Path)
+                return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"
             }
+        }
 
+        Invoke-Command -Session $Session2 -ScriptBlock {
+
+            $Functions = [ScriptBlock]::Create($Using:Functions)
             $JobListener = Start-Job -InitializationScript $Functions -ScriptBlock {
                 param(
                     $Port,
-                    $Container1Name,
                     $Container2Name,
-                    $Container2IP,
                     $Message)
 
                 $Command = (`
@@ -880,24 +888,29 @@ function Test-VRouterAgentIntegration {
 
                 $Output = & docker exec $Container2Name powershell -Command $Command
                 return $Output
-            } -ArgumentList $Port, $Container1Name, $Container2Name, $Container2IP, $Message
+            } -ArgumentList $Using:Port, $Using:Container2Name, $Using:Message
+        }
 
+        Write-Host "        Waiting for server-started"
+        Wait-RemoteFile -Session $Session2 -ContainerName $Container2Name -Path /server-started.flag
+
+        Invoke-Command -Session $Session1 -ScriptBlock {
+            $Functions = [ScriptBlock]::Create($Using:Functions)
             $JobSender = Start-Job -InitializationScript $Functions -ScriptBlock {
                 param(
                     $Port,
                     $Container1Name,
-                    $Container2Name,
                     $Container2IP,
                     $Message)
 
                 $Command = (`
-                    (New-WaitFileCommand "C:\server-started.flag") +`
+                    'New-Item -Type File /client-connecting.flag -Force > $null;' +`
                     ('$Connection = New-Object System.Net.Sockets.TcpClient(\"{0}\", {1});' -f `
                         $Container2IP, $Port) +`
+                    'New-Item -Type File /client-connected.flag -Force > $null;' +`
                     '$StreamWriter = New-Object System.IO.StreamWriter($Connection.GetStream());' +`
                     ('$StreamWriter.WriteLine(\"{0}\");' -f $Message) +`
                     '$StreamWriter.Flush();' +`
-                    'New-Item -Type File /client-connected.flag -Force > $null;' +`
                     (New-WaitFileCommand "/flows-tested.flag") +`
                     '$StreamWriter.Close();' +`
                     '$Connection.Close();' +`
@@ -905,24 +918,21 @@ function Test-VRouterAgentIntegration {
                 )
 
                 & docker exec $Container1Name powershell -Command $Command
-            } -ArgumentList $Port, $Container1Name, $Container2Name, $Container2IP, $Message
+            } -ArgumentList $Using:Port, $Using:Container1Name, $Using:Container2IP, $Using:Message
         }
-
-        Write-Host "        Waiting for server-started"
-        Wait-RemoteFile -Session $Session -ContainerName $Container2Name -Path /server-started.flag
-        Write-Host "        Done"
-        New-RemoteFile -Session $Session -ContainerName $Container1Name -Path /server-started.flag
 
         if ($TestCommunication) {
             Write-Host "        Waiting for client-connected"
-            Wait-RemoteFile -Session $Session -ContainerName $Container1Name -Path /client-connected.flag
+            Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-connected.flag
+        } else {
+            Write-Host "        Waiting for client-connecting"
+            Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-connecting.flag
+            Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
         }
-
-        Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
 
         if ($TestFlowInjection) {
             Write-Host "======> Then: Flow should be created for TCP protocol"
-            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
+            $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
                 & flow -l --match "proto tcp"
             }
             Write-Host "Flow output: $FlowOutput"
@@ -930,18 +940,19 @@ function Test-VRouterAgentIntegration {
             Write-Host "        Successfully created."
         }
 
-        New-RemoteFile -Session $Session -ContainerName $Container1Name -Path /flows-tested.flag
-        New-RemoteFile -Session $Session -ContainerName $Container2Name -Path /flows-tested.flag
+        New-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /flows-tested.flag
+        New-RemoteFile -Session $Session2 -ContainerName $Container2Name -Path /flows-tested.flag
 
         if ($TestFlowEviction -or $TestCommunication) {
             Write-Host "======> When: The TCP connection is closed"
 
-            Wait-RemoteFile -Session $Session -ContainerName $Container1Name -Path /client-disconnected.flag
-            Wait-RemoteFile -Session $Session -ContainerName $Container2Name -Path /server-stopped.flag
+            Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-disconnected.flag
+            Wait-RemoteFile -Session $Session2 -ContainerName $Container2Name -Path /server-stopped.flag
 
             if ($TestCommunication) {
+                Write-Host "======> Then: Payload should be transferred correctly"
+
                 $ReceivedMessage = Invoke-Command -Session $Session2 -ScriptBlock {
-                    $JobSender | Wait-Job -Timeout 10 | Out-Null
                     $JobListener | Wait-Job -Timeout 10 | Out-Null
                     $ReceivedMessage = $JobListener | Receive-Job
                     return $ReceivedMessage
