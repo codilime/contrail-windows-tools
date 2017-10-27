@@ -1,5 +1,9 @@
 $Accel = [PowerShell].Assembly.GetType("System.Management.Automation.TypeAccelerators")
 $Accel::add("PSSessionT", "System.Management.Automation.Runspaces.PSSession")
+function New-WaitFileCommand {
+    Param ([String] $Path)
+    return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"
+}
 
 function Wait-RemoteFile {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -218,6 +222,25 @@ function Test-VRouterAgentIntegration {
         throw "There are no evicted flows. EXPECTED: Some flows had been evicted"
     }
 
+    function Assert-SomeFlowsEvicted {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $false)] [String] $Proto)
+
+        if ($Proto) {
+            $Output = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --match "proto $Proto" --show-evicted
+            }
+        } else {
+            $Output = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --show-evicted
+            }
+        }
+
+        Write-Host "Flow output: $Output"
+        Assert-FlowEvictedSomeFlows -Output $Output
+        Write-Host "        Successfully removed."
+    }
+
     function Assert-FlowReturnedSomeFlows {
         Param ([Parameter(Mandatory = $true)] [Object[]] $Output)
         $ErrorMessage = "There are no flows. EXPECTED: Some flow(s) exist."
@@ -233,6 +256,128 @@ function Test-VRouterAgentIntegration {
         }
         Write-Host "Flow output: $Output"
         throw $ErrorMessage
+    }
+
+    function Assert-SomeFlowsReturned {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $false)] [String] $Proto)
+
+        if ($Proto) {
+            $Output = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --match "proto $Proto"
+            }
+        } else {
+            $Output = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l
+            }
+        }
+
+        Write-Host "Flow output: $FlowOutput"
+        Assert-FlowReturnedSomeFlows -Output $FlowOutput
+        Write-Host "        Successfully created."
+    }
+
+    function Assert-ReceivedMessageMatches {
+        Param ([Parameter(Mandatory = $false)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $false)] [String] $ReceivedMessage,
+               [Parameter(Mandatory = $true)] [String] $Message,
+               [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 10)
+
+        if ((!$ReceivedMessage) -and (!$Session)) {
+            throw "Either -Session or -ReceivedMessage needs to be provided"
+        }
+
+        if (!$ReceivedMessage) {
+            $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
+                $JobListener | Wait-Job -Timeout $TimeoutSeconds | Out-Null
+                $ReceivedMessage = $JobListener | Receive-Job
+                return $ReceivedMessage
+            }
+        }
+
+        Write-Host "        Sent message: $Message"
+        Write-Host "        Received message: $ReceivedMessage"
+
+        if ($Message -ne $ReceivedMessage) {
+            throw "Sent and received messages do not match."
+        } else {
+            Write-Host "        Match!"
+        }
+    }
+    function Start-TcpListener {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $true)] [String] $ContainerName,
+               [Parameter(Mandatory = $true)] [Int] $Port,
+               [Parameter(Mandatory = $false)] [Int] $WaitForFlowTest = $false)
+
+        if ($WaitForFlowTest) {
+            $FlowWaiter = New-WaitFileCommand "/flows-tested.flag"
+        } else {
+            $FlowWaiter = ""
+        }
+
+        $Command = (`
+            ('$Server = New-Object System.Net.Sockets.TcpListener(\"0.0.0.0\", {0});' -f `
+                $Port) +`
+            '$Server.Start();' +`
+            'New-Item -Type File /server-started.flag -Force > $null;' +`
+            '$Connection = $Server.AcceptTcpClient();' +`
+            '$StreamReader = New-Object System.IO.StreamReader($Connection.GetStream());' +`
+            '$Input = $StreamReader.ReadLine();' +`
+            $FlowWaiter +`
+            '$StreamReader.Close();' +`
+            '$Connection.Close();' +`
+            '$Server.Stop();' +`
+            'New-Item -Type File /server-stopped.flag -Force > $null;' +`
+            'return $Input;' `
+        )
+
+        Invoke-Command -Session $Session2 -ScriptBlock {
+            $JobListener = Start-Job -ScriptBlock {
+                param($ContainerName, $Command)
+
+                $Output = & docker exec $ContainerName powershell -Command $Command
+                return $Output
+            } -ArgumentList $Using:ContainerName, $Using:Command
+        }
+    }
+
+    function Start-TcpSender {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $true)] [String] $ContainerName,
+               [Parameter(Mandatory = $true)] [String] $Message,
+               [Parameter(Mandatory = $true)] [String] $ServerIP,
+               [Parameter(Mandatory = $true)] [Int] $Port,
+               [Parameter(Mandatory = $false)] [Int] $WaitForFlowTest = $false)
+
+        if ($WaitForFlowTest) {
+            $FlowWaiter = New-WaitFileCommand "/flows-tested.flag"
+        } else {
+            $FlowWaiter = ""
+        }
+
+        $Command = (`
+            'New-Item -Type File /client-connecting.flag -Force > $null;' +`
+            ('$Connection = New-Object System.Net.Sockets.TcpClient(\"{0}\", {1});' -f `
+                $ServerIP, $Port) +`
+            'New-Item -Type File /client-connected.flag -Force > $null;' +`
+            '$StreamWriter = New-Object System.IO.StreamWriter($Connection.GetStream());' +`
+            ('$StreamWriter.WriteLine(\"{0}\");' -f $Message) +`
+            '$StreamWriter.Flush();' +`
+            $FlowWaiter +`
+            '$StreamWriter.Close();' +`
+            '$Connection.Close();' +`
+            'New-Item -Type File /client-disconnected.flag -Force > $null;' `
+        )
+
+        Invoke-Command -Session $Session2 -ScriptBlock {
+            $JobSender = Start-Job -ScriptBlock {
+                param($ContainerName, $Command)
+
+                $Output = & docker exec $ContainerName powershell -Command $Command
+                return $Output
+            } -ArgumentList $Using:ContainerName, $Using:Command
+        }
     }
 
     function Create-ContainerInRemoteSession {
@@ -415,6 +560,25 @@ function Test-VRouterAgentIntegration {
                 -Name $Network.Name `
                 -Network $Network.Name `
                 -Subnet $Network.Subnets[0]
+        }
+    }
+    function Initialize-ComputeNodes {
+        Param ([Parameter(Mandatory = $true)] [PSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSessionT] $Session2,
+               [Parameter(Mandatory = $true)] [NetworkConfiguration] $Network1,
+               [Parameter(Mandatory = $true)] [NetworkConfiguration] $Network2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+        if ($Session1 -eq $Session2) {
+            if ($Network1.Name -eq $Network2.Name) {
+                $Networks = @($Network1)
+            } else {
+                $Networks = @($Network1, $Network2)
+            }
+            Initialize-ComputeNode -Session $Session1 -TestConfiguration $TestConfiguration -Networks $Networks
+        } else {
+            Initialize-ComputeNode -Session $Session1 -TestConfiguration $TestConfiguration -Networks @($Network1)
+            Initialize-ComputeNode -Session $Session2 -TestConfiguration $TestConfiguration -Networks @($Network2)
         }
     }
 
@@ -713,12 +877,7 @@ function Test-VRouterAgentIntegration {
             Ping-Container -Session $Session1 -ContainerName $Container1Name -IP $Container2IP
 
             Write-Host "======> Then: Flow should be created for ICMP protocol"
-            $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
-                & flow -l --match "proto icmp"
-            }
-            Write-Host "Flow output: $FlowOutput"
-            Assert-FlowReturnedSomeFlows -Output $FlowOutput
-            Write-Host "        Successfully created."
+            Assert-SomeFlowsReturned -Session $Session1 -Proto "icmp"
 
             Write-Host "Removing containers: $Container1Name and $Container2Name."
             Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
@@ -779,8 +938,6 @@ function Test-VRouterAgentIntegration {
          })
     }
 
-    # Test-MultihostTcpTrafficMultipleNets results in bluescreen on $Session1
-
     function Test-Tcp {
         Param ([Parameter(Mandatory = $true)] [String] $Name,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session1,
@@ -804,17 +961,8 @@ function Test-VRouterAgentIntegration {
 
         Write-Host "======> Given: Contrail compute services are started"
 
-        if ($Session1 -eq $Session2) {
-            if ($Network1.Name -eq $Network2.Name) {
-                $Networks = @($Network1)
-            } else {
-                $Networks = @($Network1, $Network2)
-            }
-            Initialize-ComputeNode -Session $Session1 -TestConfiguration $TestConfiguration -Networks $Networks
-        } else {
-            Initialize-ComputeNode -Session $Session1 -TestConfiguration $TestConfiguration -Networks @($Network1)
-            Initialize-ComputeNode -Session $Session2 -TestConfiguration $TestConfiguration -Networks @($Network2)
-        }
+        Initialize-ComputeNodes -Session1 $Session1 -Session2 $Session2 `
+            -Network1 $Network1 -Network2 $Network2 -TestConfiguration $TestConfiguration
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
         if ($Network1.Name -eq $Network2.Name) {
@@ -823,6 +971,7 @@ function Test-VRouterAgentIntegration {
             $different = " belonging to different networks"
         }
         Write-Host "======> When 2 containers$different are running"
+
         $Container1Name = "jolly-lumberjack"
         $Container2Name = "juniper-tree"
 
@@ -854,72 +1003,14 @@ function Test-VRouterAgentIntegration {
 
         Write-Host "        Setting up TCP sender and listener on containers..."
 
-        $Functions = {
-            function New-WaitFileCommand {
-                Param ([String] $Path)
-                return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"
-            }
-        }
-
-        Invoke-Command -Session $Session2 -ScriptBlock {
-
-            $Functions = [ScriptBlock]::Create($Using:Functions)
-            $JobListener = Start-Job -InitializationScript $Functions -ScriptBlock {
-                param(
-                    $Port,
-                    $Container2Name,
-                    $Message)
-
-                $Command = (`
-                    ('$Server = New-Object System.Net.Sockets.TcpListener(\"0.0.0.0\", {0});' -f `
-                        $Port) +`
-                    '$Server.Start();' +`
-                    'New-Item -Type File /server-started.flag -Force > $null;' +`
-                    '$Connection = $Server.AcceptTcpClient();' +`
-                    '$StreamReader = New-Object System.IO.StreamReader($Connection.GetStream());' +`
-                    '$Input = $StreamReader.ReadLine();' +`
-                    (New-WaitFileCommand "/flows-tested.flag") +`
-                    '$StreamReader.Close();' +`
-                    '$Connection.Close();' +`
-                    '$Server.Stop();' +`
-                    'New-Item -Type File /server-stopped.flag -Force > $null;' +`
-                    'return $Input;' `
-                )
-
-                $Output = & docker exec $Container2Name powershell -Command $Command
-                return $Output
-            } -ArgumentList $Using:Port, $Using:Container2Name, $Using:Message
-        }
+        Start-TcpListener -Session $Session2 -ContainerName $Container2Name `
+            -Port $Port -WaitForFlowTest $true
 
         Write-Host "        Waiting for server-started"
         Wait-RemoteFile -Session $Session2 -ContainerName $Container2Name -Path /server-started.flag
 
-        Invoke-Command -Session $Session1 -ScriptBlock {
-            $Functions = [ScriptBlock]::Create($Using:Functions)
-            $JobSender = Start-Job -InitializationScript $Functions -ScriptBlock {
-                param(
-                    $Port,
-                    $Container1Name,
-                    $Container2IP,
-                    $Message)
-
-                $Command = (`
-                    'New-Item -Type File /client-connecting.flag -Force > $null;' +`
-                    ('$Connection = New-Object System.Net.Sockets.TcpClient(\"{0}\", {1});' -f `
-                        $Container2IP, $Port) +`
-                    'New-Item -Type File /client-connected.flag -Force > $null;' +`
-                    '$StreamWriter = New-Object System.IO.StreamWriter($Connection.GetStream());' +`
-                    ('$StreamWriter.WriteLine(\"{0}\");' -f $Message) +`
-                    '$StreamWriter.Flush();' +`
-                    (New-WaitFileCommand "/flows-tested.flag") +`
-                    '$StreamWriter.Close();' +`
-                    '$Connection.Close();' +`
-                    'New-Item -Type File /client-disconnected.flag -Force > $null;' `
-                )
-
-                & docker exec $Container1Name powershell -Command $Command
-            } -ArgumentList $Using:Port, $Using:Container1Name, $Using:Container2IP, $Using:Message
-        }
+        Start-TcpSender -Session $Session1 -ContainerName $Container1Name `
+            -Message $Message -ServerIP $Container2IP -Port $Port -WaitForFlowTest $true
 
         if ($TestCommunication) {
             Write-Host "        Waiting for client-connected"
@@ -932,12 +1023,7 @@ function Test-VRouterAgentIntegration {
 
         if ($TestFlowInjection) {
             Write-Host "======> Then: Flow should be created for TCP protocol"
-            $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
-                & flow -l --match "proto tcp"
-            }
-            Write-Host "Flow output: $FlowOutput"
-            Assert-FlowReturnedSomeFlows -Output $FlowOutput
-            Write-Host "        Successfully created."
+            Assert-SomeFlowsReturned -Session $Session1 -Proto "tcp"
         }
 
         New-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /flows-tested.flag
@@ -951,30 +1037,12 @@ function Test-VRouterAgentIntegration {
 
             if ($TestCommunication) {
                 Write-Host "======> Then: Payload should be transferred correctly"
-
-                $ReceivedMessage = Invoke-Command -Session $Session2 -ScriptBlock {
-                    $JobListener | Wait-Job -Timeout 10 | Out-Null
-                    $ReceivedMessage = $JobListener | Receive-Job
-                    return $ReceivedMessage
-                }
-                Write-Host "        Sent message: $Message"
-                Write-Host "        Received message: $ReceivedMessage"
-
-                if ($Message -ne $ReceivedMessage) {
-                    throw "Sent and received messages do not match."
-                } else {
-                    Write-Host "        Match!"
-                }
+                Assert-ReceivedMessageMatches -Message $Message -Session $Session2
             }
 
             if ($TestFlowEviction) {
                 Write-Host "======> Then: Flow should be removed"
-                $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
-                    & flow -l --match "proto tcp" --show-evicted
-                }
-                Write-Host "Flow output: $FlowOutput"
-                Assert-FlowEvictedSomeFlows -Output $FlowOutput
-                Write-Host "        Successfully removed."
+                Assert-SomeFlowsEvicted -Session $Session1 -Proto "tcp"
             }
         }
 
@@ -1024,12 +1092,7 @@ function Test-VRouterAgentIntegration {
             Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
 
             Write-Host "======> Then: Flow should be created for UDP protocol"
-            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
-                & flow -l --match "proto udp"
-            }
-            Assert-FlowReturnedSomeFlows -Output $FlowOutput
-            Write-Host "        Successfully created."
-            Write-Host "Flow output: $FlowOutput"
+            Assert-SomeFlowsReturned -Session $Session -Proto "udp"
 
             Write-Host "Removing containers: $Container1Name and $Container2Name."
             Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
@@ -1116,21 +1179,9 @@ function Test-VRouterAgentIntegration {
             Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
             Write-Host "======> Then: Flow should be created for UDP protocol on the compute node of $Container1Name"
             Write-Host "        and container $Container2Name should receive the message."
-            $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
-                & flow -l --match "proto udp"
-            }
             # TODO: Flows should be checked once networks with policies are used.
-            # Assert-FlowReturnedSomeFlows -Output $FlowOutput
-            # Write-Host "        Flow successfully created."
-
-            Write-Host "        Message sent: $Message"
-            Write-Host "        Message received: $ReceivedMessage"
-
-            if ($Message -ne $ReceivedMessage) {
-                throw "Sent and received messages do not match!"
-            } else {
-                Write-Host "        Match!"
-            }
+            # Assert-SomeFlowsReturned -Session $Session1 -Proto "udp"
+            Assert-ReceivedMessageMatches -Message $Message -ReceivedMessage $ReceivedMessage
 
             Write-Host "Removing containers: $Container1Name and $Container2Name."
             Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
