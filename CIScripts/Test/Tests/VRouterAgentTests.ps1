@@ -33,7 +33,7 @@ function New-RemoteFile {
     # TODO this ugly empty.flag
     # (docker cp is a lot faster than exec powershell new-item)
     Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -Type File empty.flag -Force
+        New-Item -Type File empty.flag -Force > $null
         & docker cp empty.flag ($Using:ContainerName + ":/" + $Using:Path)
     }
 }
@@ -403,17 +403,19 @@ function Test-VRouterAgentIntegration {
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
     }
 
-    function Initialize-ComputeNodeForMultihostUDPTests {
+    function Initialize-ComputeNode {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
-               [Parameter(Mandatory = $true)] [NetworkConfiguration] $NetworkConfiguration)
+               [Parameter(Mandatory = $true)] [NetworkConfiguration[]] $Networks)
 
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
         Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
-            -Name $NetworkConfiguration.Name `
-            -Network $NetworkConfiguration.Name `
-            -Subnet $NetworkConfiguration.Subnets[0]
+        Foreach ($Network in $Networks) {
+            New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
+                -Name $Network.Name `
+                -Network $Network.Name `
+                -Subnet $Network.Subnets[0]
+        }
     }
 
     #
@@ -725,131 +727,200 @@ function Test-VRouterAgentIntegration {
             Write-Host "===> PASSED: Test-FlowsAreInjectedOnIcmpTraffic"
         })
     }
-
-    function Test-FlowsAreInjectedAndEvictedOnTcpTraffic {
+    function Test-FlowsAreInjectedOnTcpTraffic {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        $Job.StepQuiet($MyInvocation.MyCommand.Name, {
-            Write-Host "===> Running: Test-FlowsAreInjectedOnTcpTraffic"
+        $Name = $MyInvocation.MyCommand.Name
 
-            Write-Host "======> Given: Contrail compute services are started"
-            Initialize-ComputeNodeForFlowTests -Session $Session -TestConfiguration $TestConfiguration
+        $Job.StepQuiet($Name, {
+            Test-Tcp `
+                -Name $Name `
+                -Session1 $Session `
+                -Session2 $Session `
+                -TestConfiguration $TestConfiguration `
+                -TestCommunication $false `
+                -TestFlowEviction $false
+        })
+    }
 
-            Write-Host "======> When 2 containers belonging to different networks are running"
-            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name
-            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name
-            $Container1Name = "jolly-lumberjack"
-            $Container2Name = "juniper-tree"
+    function Test-TcpTrafficSingleNet {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-            $CreateContainer1Success = Create-ContainerInRemoteSession `
-                -Session $Session `
-                -NetworkName $Network1Name `
-                -ContainerName $Container1Name `
-                -DockerImage 'microsoft/windowsservercore'
-            $CreateContainer2Success = Create-ContainerInRemoteSession `
-                -Session $Session `
-                -NetworkName $Network2Name `
-                -ContainerName $Container2Name `
-                -DockerImage 'microsoft/windowsservercore'
+        $Name = $MyInvocation.MyCommand.Name
+        
+        $Job.StepQuiet($Name, {
+            Test-Tcp `
+                -Name $Name `
+                -Session1 $Session `
+                -Session2 $Session `
+                -TestConfiguration $TestConfiguration `
+                -Network2 $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+        })
+    }
 
-            if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
-                throw "Container creation failed. EXPECTED: succeeded."
+    function Test-MultihostTcpTrafficSingleNet {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+
+    }
+
+    function Test-Tcp {
+        Param ([Parameter(Mandatory = $true)] [String] $Name,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
+               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
+               [Parameter(Mandatory = $false)] [NetworkConfiguration] $Network1,
+               [Parameter(Mandatory = $false)] [NetworkConfiguration] $Network2,
+               [Parameter(Mandatory = $false)] [Bool] $TestFlowInjection = $true,
+               [Parameter(Mandatory = $false)] [Bool] $TestCommunication = $true,
+               [Parameter(Mandatory = $false)] [Bool] $TestFlowEviction = $true)
+        
+        if (!$Network1) {
+            $Network1 = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+        }
+
+        if (!$Network2) {
+            $Network2 = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2
+        }
+
+        Write-Host "===> Running: $Name"
+
+        Write-Host "======> Given: Contrail compute services are started"
+
+        if ($Session1 -eq $Session2) {
+            if ($Network1.Name -eq $Network2.Name) {
+                $Networks = @($Network1)
+            } else {
+                $Networks = @($Network1, $Network2)
             }
+            Initialize-ComputeNode -Session $Session1 -TestConfiguration $TestConfiguration -Networks $Networks
+        } else {
+            Initialize-ComputeNode -Session $Session1 -TestConfiguration $TestConfiguration -Networks @($Network1)
+            Initialize-ComputeNode -Session $Session2 -TestConfiguration $TestConfiguration -Networks @($Network2)
+        }
+        Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
-            $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
-                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-            }
+        if ($Network1.Name -eq $Network2.Name) {
+            $different = " "
+        } else {
+            $different = " belonging to different networks"
+        }
+        Write-Host "======> When 2 containers$different are running"
+        $Container1Name = "jolly-lumberjack"
+        $Container2Name = "juniper-tree"
 
-            Write-Host "======> When: Container $Container1Name (network: $Network1Name) is trying to"
-            Write-Host "        open TCP connection to $Container2Name (network: $Network2Name, IP: $Container2IP)"
-            Write-Host
+        $CreateContainer1Success = Create-ContainerInRemoteSession `
+            -Session $Session1 `
+            -NetworkName $Network1.Name `
+            -ContainerName $Container1Name `
+            -DockerImage 'microsoft/windowsservercore'
+        $CreateContainer2Success = Create-ContainerInRemoteSession `
+            -Session $Session2 `
+            -NetworkName $Network2.Name `
+            -ContainerName $Container2Name `
+            -DockerImage 'microsoft/windowsservercore'
 
-            $Port = "1905"
-            $Message = "Even diamonds require polishing."
+        if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
+            throw "Container creation failed. EXPECTED: succeeded."
+        }
 
-            Write-Host "        Setting up TCP sender and listener on containers..."
+        $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
+            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
+        }
 
-            Invoke-Command -Session $Session -ScriptBlock {
-                $Port = $Using:Port
-                $Container1Name = $Using:Container1Name
-                $Container2Name = $Using:Container2Name
-                $Container2IP = $Using:Container2IP
-                $Message = $Using:Message
+        Write-Host "======> When: Container $Container1Name (network: ${Network1.Name}) is trying to"
+        Write-Host "        open TCP connection to $Container2Name (network: ${Network2.Name}, IP: $Container2IP)"
+        Write-Host
 
-                echo "Port: $Using:Port"
-                echo "Port: $Port"
+        $Port = "1905"
+        $Message = "Even diamonds require polishing."
 
-                $Functions = {
-                    function New-WaitFileCommand {
-                        Param ([String] $Path)
-                        return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"
-                    }
+        Write-Host "        Setting up TCP sender and listener on containers..."
+
+        Invoke-Command -Session $Session2 -ScriptBlock {
+            $Port = $Using:Port
+            $Container1Name = $Using:Container1Name
+            $Container2Name = $Using:Container2Name
+            $Container2IP = $Using:Container2IP
+            $Message = $Using:Message
+
+            $Functions = {
+                function New-WaitFileCommand {
+                    Param ([String] $Path)
+                    return "while (!(Test-Path $Path)) { Start-Sleep -Milliseconds 300 };"
                 }
-
-                $JobListener = Start-Job -InitializationScript $Functions -ScriptBlock {
-                    param(
-                        $Port,
-                        $Container1Name,
-                        $Container2Name,
-                        $Container2IP,
-                        $Message)
-
-                    $Command = (`
-                        ('$Server = New-Object System.Net.Sockets.TcpListener(\"0.0.0.0\", {0});' -f `
-                            $Port) +`
-                        '$Server.Start();' +`
-                        'New-Item -Type File /server-started.flag -Force > $null;' +`
-                        '$Connection = $Server.AcceptTcpClient();' +`
-                        '$StreamReader = New-Object System.IO.StreamReader($Connection.GetStream());' +`
-                        '$Input = $StreamReader.ReadLine();' +`
-                        (New-WaitFileCommand "/flows-tested.flag") +`
-                        '$StreamReader.Close();' +`
-                        '$Connection.Close();' +`
-                        '$Server.Stop();' +`
-                        'New-Item -Type File /server-stopped.flag -Force > $null;' +`
-                        'return $Input;' `
-                    )
-
-                    $Output = & docker exec $Container2Name powershell -Command $Command
-                    return $Output
-                } -ArgumentList $Port, $Container1Name, $Container2Name, $Container2IP, $Message
-
-                $JobSender = Start-Job -InitializationScript $Functions -ScriptBlock {
-                    param(
-                        $Port,
-                        $Container1Name,
-                        $Container2Name,
-                        $Container2IP,
-                        $Message)
-
-                    $Command = (`
-                        (New-WaitFileCommand "C:\server-started.flag") +`
-                        ('$Connection = New-Object System.Net.Sockets.TcpClient(\"{0}\", {1});' -f `
-                            $Container2IP, $Port) +`
-                        '$StreamWriter = New-Object System.IO.StreamWriter($Connection.GetStream());' +`
-                        ('$StreamWriter.WriteLine(\"{0}\");' -f $Message) +`
-                        '$StreamWriter.Flush();' +`
-                        'New-Item -Type File /client-connected.flag -Force > $null;' +`
-                        (New-WaitFileCommand "/flows-tested.flag") +`
-                        '$StreamWriter.Close();' +`
-                        '$Connection.Close();' +`
-                        'New-Item -Type File /client-disconnected.flag -Force > $null;' `
-                    )
-
-                    & docker exec $Container1Name powershell -Command $Command
-                } -ArgumentList $Port, $Container1Name, $Container2Name, $Container2IP, $Message
             }
 
-            Write-Host "        Waiting for server-started"
-            Wait-RemoteFile -Session $Session -ContainerName $Container2Name -Path /server-started.flag
-            Write-Host "        Done"
-            New-RemoteFile -Session $Session -ContainerName $Container1Name -Path /server-started.flag
+            $JobListener = Start-Job -InitializationScript $Functions -ScriptBlock {
+                param(
+                    $Port,
+                    $Container1Name,
+                    $Container2Name,
+                    $Container2IP,
+                    $Message)
+
+                $Command = (`
+                    ('$Server = New-Object System.Net.Sockets.TcpListener(\"0.0.0.0\", {0});' -f `
+                        $Port) +`
+                    '$Server.Start();' +`
+                    'New-Item -Type File /server-started.flag -Force > $null;' +`
+                    '$Connection = $Server.AcceptTcpClient();' +`
+                    '$StreamReader = New-Object System.IO.StreamReader($Connection.GetStream());' +`
+                    '$Input = $StreamReader.ReadLine();' +`
+                    (New-WaitFileCommand "/flows-tested.flag") +`
+                    '$StreamReader.Close();' +`
+                    '$Connection.Close();' +`
+                    '$Server.Stop();' +`
+                    'New-Item -Type File /server-stopped.flag -Force > $null;' +`
+                    'return $Input;' `
+                )
+
+                $Output = & docker exec $Container2Name powershell -Command $Command
+                return $Output
+            } -ArgumentList $Port, $Container1Name, $Container2Name, $Container2IP, $Message
+
+            $JobSender = Start-Job -InitializationScript $Functions -ScriptBlock {
+                param(
+                    $Port,
+                    $Container1Name,
+                    $Container2Name,
+                    $Container2IP,
+                    $Message)
+
+                $Command = (`
+                    (New-WaitFileCommand "C:\server-started.flag") +`
+                    ('$Connection = New-Object System.Net.Sockets.TcpClient(\"{0}\", {1});' -f `
+                        $Container2IP, $Port) +`
+                    '$StreamWriter = New-Object System.IO.StreamWriter($Connection.GetStream());' +`
+                    ('$StreamWriter.WriteLine(\"{0}\");' -f $Message) +`
+                    '$StreamWriter.Flush();' +`
+                    'New-Item -Type File /client-connected.flag -Force > $null;' +`
+                    (New-WaitFileCommand "/flows-tested.flag") +`
+                    '$StreamWriter.Close();' +`
+                    '$Connection.Close();' +`
+                    'New-Item -Type File /client-disconnected.flag -Force > $null;' `
+                )
+
+                & docker exec $Container1Name powershell -Command $Command
+            } -ArgumentList $Port, $Container1Name, $Container2Name, $Container2IP, $Message
+        }
+
+        Write-Host "        Waiting for server-started"
+        Wait-RemoteFile -Session $Session -ContainerName $Container2Name -Path /server-started.flag
+        Write-Host "        Done"
+        New-RemoteFile -Session $Session -ContainerName $Container1Name -Path /server-started.flag
+
+        if ($TestCommunication) {
             Write-Host "        Waiting for client-connected"
             Wait-RemoteFile -Session $Session -ContainerName $Container1Name -Path /client-connected.flag
+        }
 
-            Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
+        Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
 
+        if ($TestFlowInjection) {
             Write-Host "======> Then: Flow should be created for TCP protocol"
             $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
                 & flow -l --match "proto tcp"
@@ -857,44 +928,50 @@ function Test-VRouterAgentIntegration {
             Write-Host "Flow output: $FlowOutput"
             Assert-FlowReturnedSomeFlows -Output $FlowOutput
             Write-Host "        Successfully created."
+        }
 
-            New-RemoteFile -Session $Session -ContainerName $Container1Name -Path /flows-tested.flag
-            New-RemoteFile -Session $Session -ContainerName $Container2Name -Path /flows-tested.flag
+        New-RemoteFile -Session $Session -ContainerName $Container1Name -Path /flows-tested.flag
+        New-RemoteFile -Session $Session -ContainerName $Container2Name -Path /flows-tested.flag
 
+        if ($TestFlowEviction -or $TestCommunication) {
             Write-Host "======> When: The TCP connection is closed"
 
             Wait-RemoteFile -Session $Session -ContainerName $Container1Name -Path /client-disconnected.flag
             Wait-RemoteFile -Session $Session -ContainerName $Container2Name -Path /server-stopped.flag
 
-            $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
-                $JobSender | Wait-Job -Timeout 10 | Out-Null
-                $JobListener | Wait-Job -Timeout 10 | Out-Null
-                $ReceivedMessage = $JobListener | Receive-Job
-                return $ReceivedMessage
+            if ($TestCommunication) {
+                $ReceivedMessage = Invoke-Command -Session $Session2 -ScriptBlock {
+                    $JobSender | Wait-Job -Timeout 10 | Out-Null
+                    $JobListener | Wait-Job -Timeout 10 | Out-Null
+                    $ReceivedMessage = $JobListener | Receive-Job
+                    return $ReceivedMessage
+                }
+                Write-Host "        Sent message: $Message"
+                Write-Host "        Received message: $ReceivedMessage"
+
+                if ($Message -ne $ReceivedMessage) {
+                    throw "Sent and received messages do not match."
+                } else {
+                    Write-Host "        Match!"
+                }
             }
-            Write-Host "        Sent message: $Message"
-            Write-Host "        Received message: $ReceivedMessage"
 
-            if ($Message -ne $ReceivedMessage) {
-                throw "Sent and received messages do not match."
-            } else {
-                Write-Host "        Match!"
+            if ($TestFlowEviction) {
+                Write-Host "======> Then: Flow should be removed"
+                $FlowOutput = Invoke-Command -Session $Session1 -ScriptBlock {
+                    & flow -l --match "proto tcp" --show-evicted
+                }
+                Write-Host "Flow output: $FlowOutput"
+                Assert-FlowEvictedSomeFlows -Output $FlowOutput
+                Write-Host "        Successfully removed."
             }
+        }
 
-            Write-Host "======> Then: Flow should be removed"
-            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
-                & flow -l --match "proto tcp" --show-evicted
-            }
-            Write-Host "Flow output: $FlowOutput"
-            Assert-FlowEvictedSomeFlows -Output $FlowOutput
-            Write-Host "        Successfully removed."
+        Write-Host "Removing containers: $Container1Name and $Container2Name."
+        Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
+        Remove-ContainerInRemoteSession -Session $Session2 -ContainerName $Container2Name | Out-Null
 
-            Write-Host "Removing containers: $Container1Name and $Container2Name."
-            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container1Name | Out-Null
-            Remove-ContainerInRemoteSession -Session $Session -ContainerName $Container2Name | Out-Null
-
-            Write-Host "===> PASSED: Test-FlowsAreInjectedAndEvictedOnTcpTraffic"
-        })
+        Write-Host "===> PASSED: $Name"
     }
 
     function Test-FlowsAreInjectedOnUdpTraffic {
@@ -960,14 +1037,14 @@ function Test-VRouterAgentIntegration {
             Write-Host "===> Running: Test-MultihostUdpTraffic"
 
             Write-Host "======> Given: Contrail compute services are started on two compute nodes"
-            Initialize-ComputeNodeForMultihostUDPTests `
+            Initialize-ComputeNode `
                 -Session $Session1 `
                 -TestConfiguration $TestConfiguration `
-                -NetworkConfiguration $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
-            Initialize-ComputeNodeForMultihostUDPTests `
+                -Networks @($TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1)
+            Initialize-ComputeNode `
                 -Session $Session2 `
                 -TestConfiguration $TestConfiguration `
-                -NetworkConfiguration $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+                -Networks @($TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1)
             Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
             Write-Host "======> When 2 containers belonging to different networks are running"
@@ -1063,6 +1140,8 @@ function Test-VRouterAgentIntegration {
         Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnIcmpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
+        Test-TcpTrafficSingleNet -Session $Session1 -TestConfiguration $TestConfiguration
+        Test-MultihostTcpTrafficSingleNet -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-MultihostUdpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
     })
