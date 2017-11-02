@@ -44,7 +44,7 @@ function Copy-Repos {
                 if ($LASTEXITCODE -ne 0) {
                     throw "Cloning from " + $_.Url + " failed"
                 }
-            })
+            }
         })
     })
 }
