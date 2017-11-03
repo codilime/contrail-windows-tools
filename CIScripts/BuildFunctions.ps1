@@ -40,9 +40,13 @@ function Copy-Repos {
 function Invoke-ContrailCommonActions {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! BEFORE "
+    env
     $Job.Step("Sourcing VS environment variables", {
         Invoke-BatchFile "$VSSetupEnvScriptPath"
     })
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AFTER "
+    env
 
     $Job.Step("Copying common third-party dependencies", {
         New-Item -ItemType Directory .\third_party
