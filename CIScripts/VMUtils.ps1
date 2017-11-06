@@ -56,8 +56,8 @@ function New-TestbedVMs {
            [Parameter(Mandatory = $true, HelpMessage = "Location of crash dump files")] [string] $DumpFilesLocation,
            [Parameter(Mandatory = $true, HelpMessage = "Crash dump files base name (prefix)")] [string] $DumpFilesBaseName,
            [Parameter(Mandatory = $true, HelpMessage = "Max time to wait for VMs")] [int] $MaxWaitVMMinutes,
-           [Parameter(HelpMessage = "Switch indicating if MSVC debug DLLs should be copied", ParameterSetName = "CopyMsvcDebugDlls")] [switch] $CopyMsvcDebugDlls,
-           [Parameter(Mandatory = $true, HelpMessage = "Directory with MSVC debug DLLs", ParameterSetName = "CopyMsvcDebugDlls")] [string] $MsvcDebugDllsDir)
+           [Parameter(ParameterSetName = "CopyMsvcDebugDlls", HelpMessage = "Switch indicating if MSVC debug DLLs should be copied")] [switch] $CopyMsvcDebugDlls,
+           [Parameter(ParameterSetName = "CopyMsvcDebugDlls", Mandatory = $true, HelpMessage = "Directory with MSVC debug DLLs")] [string] $MsvcDebugDllsDir)
 
     function New-StartedVM {
         Param ([Parameter(Mandatory = $true)] [string] $VMName,
