@@ -47,6 +47,7 @@ function Initialize-VIServer {
 }
 
 function New-TestbedVMs {
+    [CmdletBinding(DefaultParametersetName = "None")]
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of created VMs")] [string[]] $VMNames,
            [Parameter(Mandatory = $true, HelpMessage = "Flag indicating if we should install all artifacts on spawned VMs")] [bool] $InstallArtifacts,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData,
