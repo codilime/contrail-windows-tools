@@ -223,7 +223,7 @@ function New-TestbedVMs {
                [Parameter(Mandatory = $true)] [string] $MsvcDebugDllsDir)
 
         Invoke-Command -Session $Session -ScriptBlock {
-            Copy-Item -Path "$MsvcDebugDllsDir\*.dll" -Destination "C:\Windows\system32\"
+            Copy-Item -Path "$Using:MsvcDebugDllsDir\*.dll" -Destination "C:\Windows\system32\"
         }
     }
 
