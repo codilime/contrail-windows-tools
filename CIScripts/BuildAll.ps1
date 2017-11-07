@@ -19,8 +19,8 @@ Invoke-ContrailCommonActions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSet
 
 $ReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
 
-Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH
-Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode
-Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode
+Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -OutputPath "output/docker_driver"
+Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode -OutputPath "output/vrouter"
+Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode -OutputPath "output/agent"
 
 $Job.Done()
