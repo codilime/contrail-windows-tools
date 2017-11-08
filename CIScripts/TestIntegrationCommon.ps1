@@ -7,8 +7,11 @@ $Job = [Job]::new("Deploy and test")
 
 $ArtifactsDir = $Env:ARTIFACTS_DIR
 
-# TODO: for now.
+# TODO: We will have a single script with multiple pipelines. This variable will be
+# set to different values in different pipelines (deploy-devenv vs test-integration)
 $Env:SHOULD_RUN_TESTS = $true
+
+# TODO: remove when jenkins jobs are updated
 $Env:DEPLOY_METHOD = "Legacy"
 
 $TestbedSessions = $null
@@ -20,7 +23,6 @@ if($Env:DEPLOY_METHOD -eq "Legacy") {
 } elseif($Env:DEPLOY_METHOD -eq "Ansible") {
     . $PSScriptRoot\Deployment\AnsibleDeploy.ps1
     $IPs = Deploy-Ansible
-    # TODO ^^^^^^^^^^^^^^
     $TestbedSessions = New-RemoteSessions -VMNames $IPs -Credentials $Creds
     Provision-Testbeds -Sessions $TestbedSessions -ArtifactsDir $ArtifactsDir
 } else {
@@ -37,7 +39,8 @@ if($Env:DEPLOY_METHOD -eq "Legacy") {
     . $PSScriptRoot\Deployment\LegacyDeploy.ps1
     Teardown-Legacy -VMNames $TestbedVMNames
 } elseif($Env:DEPLOY_METHOD -eq "Ansible") {
-    # TODO
+    . $PSScriptRoot\Deployment\AnsibleDeploy.ps1
+    Teardown-Ansible
 }
 
 $Job.Done()

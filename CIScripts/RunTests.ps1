@@ -1,4 +1,3 @@
-# Sourcing test functions
 . $PSScriptRoot\Tests\TestConfigurationUtils.ps1
 . $PSScriptRoot\Tests.ps1
 
