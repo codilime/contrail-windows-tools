@@ -1,16 +1,17 @@
 # Sourcing test functions
+. $PSScriptRoot\Tests\TestConfigurationUtils.ps1
 . $PSScriptRoot\Tests.ps1
-
-$SingleSubnetNetworkConfiguration = [NetworkConfiguration] @{
-    Name = $Env:SINGLE_SUBNET_NETWORK_NAME
-    Subnets = @($Env:SINGLE_SUBNET_NETWORK_SUBNET)
-}
 
 function Run-Tests() {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
     $Job.Step("Running all integration tests", {
+
+        $SingleSubnetNetworkConfiguration = [NetworkConfiguration] @{
+            Name = $Env:SINGLE_SUBNET_NETWORK_NAME
+            Subnets = @($Env:SINGLE_SUBNET_NETWORK_SUBNET)
+        }
 
         $MultipleSubnetsNetworkConfiguration = [NetworkConfiguration] @{
             Name = $Env:MULTIPLE_SUBNETS_NETWORK_NAME
@@ -87,5 +88,5 @@ function Run-Tests() {
         if($Env:RUN_DRIVER_TESTS -eq "1") {
             Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
         }
-    }
+    })
 }

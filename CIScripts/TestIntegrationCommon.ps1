@@ -17,15 +17,17 @@ $Env:DEPLOY_METHOD = "Legacy"
 $TestbedSessions = $null
 $TestbedVMNames = $null
 
-if($Env:DEPLOY_METHOD == "Legacy") {
+if($Env:DEPLOY_METHOD -eq "Legacy") {
     . $PSScriptRoot\Deployment\LegacyDeploy.ps1
     $TestbedSessions, $TestbedVMNames = Deploy-Legacy -VMsNeeded 2 -IsReleaseMode $ReleaseModeBuild
-} else if($Env:DEPLOY_METHOD == "Ansible") {
+} elseif($Env:DEPLOY_METHOD -eq "Ansible") {
     . $PSScriptRoot\Deployment\AnsibleDeploy.ps1
     $IPs = Deploy-Ansible
     # TODO ^^^^^^^^^^^^^^
     $TestbedSessions = New-RemoteSessions -VMNames $IPs -Credentials $Creds
     Provision-Testbeds -Sessions $TestbedSessions -ArtifactsDir $ArtifactsDir
+} else {
+    throw "Unsupported deploy method. Must be either Legacy or Ansible."
 }
 
 if($Env:SHOULD_RUN_TESTS) {

@@ -1,4 +1,4 @@
-. $PSScriptRoot\Common.ps1
+. $PSScriptRoot\..\Common.ps1
 
 function Deploy-Legacy {
     Param ([Parameter(Mandatory = $true)] [int] $VMsNeeded,
@@ -24,7 +24,7 @@ function Deploy-Legacy {
     $DumpFilesLocation = $Env:DUMP_FILES_LOCATION
     $DumpFilesBaseName = ($Env:JOB_BASE_NAME + "_" + $Env:BUILD_NUMBER)
 
-    $VMBaseName = Get-SanitizedOrGeneratedVMName -VMName $Env:VM_NAME -RandomNamePrefix "Core-"x
+    $VMBaseName = Get-SanitizedOrGeneratedVMName -VMName $Env:VM_NAME -RandomNamePrefix "Core-"
     $VMNames = [System.Collections.ArrayList] @()
     for ($i = 0; $i -lt $VMsNeeded; $i++) {
         $VMNames += $VMBaseName + "-" + $i.ToString()
@@ -33,7 +33,7 @@ function Deploy-Legacy {
     Write-Host "Starting Testbeds:"
     $VMNames.ForEach({ Write-Host $_ })
 
-    $VMCredentials = Get-VMCreds()
+    $VMCredentials = Get-VMCreds
 
     if ($IsReleaseMode) {
         $Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
