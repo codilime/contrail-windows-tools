@@ -126,11 +126,12 @@ function Invoke-DockerDriverBuild {
 
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "docker-driver.msi"
 
+    Pop-Location
+
     $Job.Step("Copying artifacts to $OutputPath", {
-        Copy-Item ./* $OutputPath
+        Copy-Item bin/* $OutputPath
     })
 
-    Pop-Location
 
     $Job.PopStep()
 }
