@@ -19,6 +19,10 @@ Invoke-ContrailCommonActions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSet
 
 $ReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
 
+New-Item -Path "output" -Name "docker_driver" -ItemType directory
+New-Item -Path "output" -Name "vrouter" -ItemType directory
+New-Item -Path "output" -Name "agent" -ItemType directory
+
 Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -OutputPath "output/docker_driver"
 Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode -OutputPath "output/vrouter"
 Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode -OutputPath "output/agent"
