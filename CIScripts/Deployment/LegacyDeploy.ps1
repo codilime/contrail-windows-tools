@@ -55,7 +55,7 @@ function Deploy-Legacy {
 }
 
 function Teardown-Legacy {
-    Param ([Parameter(Mandatory = $true)] [int] $VMNames)
+    Param ([Parameter(Mandatory = $true)] [string[]] $VMNames)
 
     $Job.Step("Teardown using Legacy method", {
         $VIServerAccessData = [VIServerAccessData] @{
