@@ -27,7 +27,7 @@ if($Env:DEPLOY_METHOD -eq "Legacy") {
 }
 
 if($Env:SHOULD_RUN_TESTS) {
-    Run-Tests -Sessions $TestbedSessions -ArtifactsDir $ArtifactsDir
+    Run-Tests -Sessions $TestbedSessions
 } else {
     Write-Output "Won't run tests."
 }

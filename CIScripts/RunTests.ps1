@@ -3,8 +3,7 @@
 . $PSScriptRoot\Tests.ps1
 
 function Run-Tests() {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
-           [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
     $Job.Step("Running all integration tests", {
 
