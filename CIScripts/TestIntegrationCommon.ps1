@@ -1,3 +1,4 @@
+. $PSScriptRoot\InitializeCIScript.ps1
 . $PSScriptRoot\Common.ps1
 . $PSScriptRoot\VMUtils.ps1
 . $PSScriptRoot\RunTests.ps1

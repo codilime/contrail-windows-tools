@@ -1,3 +1,4 @@
+. $PSScriptRoot\InitializeCIScript.ps1
 . $PSScriptRoot\Common.ps1
 . $PSScriptRoot\BuildFunctions.ps1
 . $PSScriptRoot\Job.ps1

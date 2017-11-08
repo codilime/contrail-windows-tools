@@ -1,3 +1,4 @@
+. $PSScriptRoot\InitializeCIScript.ps1
 . $PSScriptRoot\Common.ps1
 
 # Sourcing VM management functions
