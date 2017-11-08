@@ -3,6 +3,9 @@
 . $PSScriptRoot\VMUtils.ps1
 . $PSScriptRoot\RunTests.ps1
 . $PSScriptRoot\Job.ps1
+. $PSScriptRoot\Deployment\LegacyDeploy.ps1
+. $PSScriptRoot\Deployment\AnsibleDeploy.ps1
+
 $Job = [Job]::new("Deploy and test")
 
 $ArtifactsDir = $Env:ARTIFACTS_DIR
@@ -18,10 +21,8 @@ $TestbedSessions = $null
 $TestbedVMNames = $null
 
 if($Env:DEPLOY_METHOD -eq "Legacy") {
-    . $PSScriptRoot\Deployment\LegacyDeploy.ps1
     $TestbedSessions, $TestbedVMNames = Deploy-Legacy -VMsNeeded 2 -IsReleaseMode $ReleaseModeBuild
 } elseif($Env:DEPLOY_METHOD -eq "Ansible") {
-    . $PSScriptRoot\Deployment\AnsibleDeploy.ps1
     $IPs = Deploy-Ansible
     $TestbedSessions = New-RemoteSessions -VMNames $IPs -Credentials $Creds
     Provision-Testbeds -Sessions $TestbedSessions -ArtifactsDir $ArtifactsDir
@@ -36,10 +37,8 @@ if($Env:SHOULD_RUN_TESTS) {
 }
 
 if($Env:DEPLOY_METHOD -eq "Legacy") {
-    . $PSScriptRoot\Deployment\LegacyDeploy.ps1
     Teardown-Legacy -VMNames $TestbedVMNames
 } elseif($Env:DEPLOY_METHOD -eq "Ansible") {
-    . $PSScriptRoot\Deployment\AnsibleDeploy.ps1
     Teardown-Ansible
 }
 
