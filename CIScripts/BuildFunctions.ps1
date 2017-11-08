@@ -161,16 +161,16 @@ function Invoke-ExtensionBuild {
         }
     })
 
-    $vRouterMSI = "build\{0}\vrouter\extension\vRouter.msi" -f $BuildMode
-    $utilsMSI = "build\{0}\vrouter\utils\utils.msi" -f $BuildMode
+    $vRouterRoot = "build\{0}\vrouter" -f $BuildMode
+    $vRouterMSI = "$vRouterRoot\extension\vRouter.msi"
+    $utilsMSI = "$vRouterRoot\utils\utils.msi"
+    $vTestPath = "$vRouterRoot\utils\vtest\"
 
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
 
     Write-Host "Signing vRouterMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
-
-    $vTestPath = "build\{0}\vrouter\utils\vtest\"
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $utilsMSI $OutputPath -Recurse -Container
