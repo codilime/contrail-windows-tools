@@ -264,11 +264,9 @@ function Provision-Testbeds {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
            [Parameter(Mandatory = $true)] [string] $ArtifactsDir)
     $Job.Step("Provisioning testbeds", {
-        $i = 1
         $Sessions.ForEach({
-            $Job.Step("Provisioning testbed $i", {
-                Install-Artifacts -Session $_ -ArtifactsDir $ArtifactsDir 
-                $i += 1
+            $Job.Step("Provisioning testbed...", {
+                Install-Artifacts -Session $_ -ArtifactsDir $ArtifactsDir
             })
         })
     })

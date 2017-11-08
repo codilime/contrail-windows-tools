@@ -33,9 +33,11 @@ if($Env:SHOULD_RUN_TESTS) {
     Write-Output "Won't run tests."
 }
 
-if($Env:DEPLOY_METHOD == "Legacy") {
+if($Env:DEPLOY_METHOD -eq "Legacy") {
     . $PSScriptRoot\Deployment\LegacyDeploy.ps1
     Teardown-Legacy -VMNames $TestbedVMNames
+} elseif($Env:DEPLOY_METHOD -eq "Ansible") {
+    # TODO
 }
 
 $Job.Done()
