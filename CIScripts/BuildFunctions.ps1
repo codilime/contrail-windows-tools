@@ -176,7 +176,7 @@ function Invoke-ExtensionBuild {
         Copy-Item $utilsMSI $OutputPath -Recurse -Container
         Copy-Item $vRouterMSI $OutputPath -Recurse -Container
         Copy-Item $CertPath $OutputPath -Recurse -Container
-        Copy-Item -Recurse $vTestPath "$OutputPath\utils\vtest" -Recurse -Container
+        Copy-Item $vTestPath "$OutputPath\utils\vtest" -Recurse -Container
     })
 
     $Job.PopStep()
