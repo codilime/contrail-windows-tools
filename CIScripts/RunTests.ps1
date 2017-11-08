@@ -67,6 +67,8 @@ function Run-Tests() {
             VMDir = $Env:SNAT_VM_DIR;
         }
 
+        return #just for test
+
         Test-AgentService -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-Agent -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-ExtensionLongLeak -Session $Sessions[0] -TestDurationHours $Env:LEAK_TEST_DURATION -TestConfiguration $TestConfiguration
