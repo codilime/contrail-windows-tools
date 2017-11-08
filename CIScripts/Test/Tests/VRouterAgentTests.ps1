@@ -228,7 +228,7 @@ function Test-VRouterAgentIntegration {
 
         if ($Proto) {
             $Output = Invoke-Command -Session $Session -ScriptBlock {
-                & flow -l --match "proto $Proto" --show-evicted
+                & flow -l --match "proto $Using:Proto" --show-evicted
             }
         } else {
             $Output = Invoke-Command -Session $Session -ScriptBlock {
@@ -263,11 +263,11 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $false)] [String] $Proto)
 
         if ($Proto) {
-            $Output = Invoke-Command -Session $Session -ScriptBlock {
-                & flow -l --match "proto $Proto"
+            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
+                & flow -l --match "proto $Using:Proto"
             }
         } else {
-            $Output = Invoke-Command -Session $Session -ScriptBlock {
+            $FlowOutput = Invoke-Command -Session $Session -ScriptBlock {
                 & flow -l
             }
         }
@@ -289,7 +289,7 @@ function Test-VRouterAgentIntegration {
 
         if (!$ReceivedMessage) {
             $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
-                $JobListener | Wait-Job -Timeout $TimeoutSeconds | Out-Null
+                $JobListener | Wait-Job -Timeout $Using:TimeoutSeconds | Out-Null
                 $ReceivedMessage = $JobListener | Receive-Job
                 return $ReceivedMessage
             }
@@ -370,7 +370,7 @@ function Test-VRouterAgentIntegration {
             'New-Item -Type File /client-disconnected.flag -Force > $null;' `
         )
 
-        Invoke-Command -Session $Session2 -ScriptBlock {
+        Invoke-Command -Session $Session -ScriptBlock {
             $JobSender = Start-Job -ScriptBlock {
                 param($ContainerName, $Command)
 
@@ -563,8 +563,8 @@ function Test-VRouterAgentIntegration {
         }
     }
     function Initialize-ComputeNodes {
-        Param ([Parameter(Mandatory = $true)] [PSessionT] $Session1,
-               [Parameter(Mandatory = $true)] [PSessionT] $Session2,
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
+               [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [NetworkConfiguration] $Network1,
                [Parameter(Mandatory = $true)] [NetworkConfiguration] $Network2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
@@ -1012,12 +1012,11 @@ function Test-VRouterAgentIntegration {
         Start-TcpSender -Session $Session1 -ContainerName $Container1Name `
             -Message $Message -ServerIP $Container2IP -Port $Port -WaitForFlowTest $true
 
-        if ($TestCommunication) {
-            Write-Host "        Waiting for client-connected"
-            Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-connected.flag
-        } else {
-            Write-Host "        Waiting for client-connecting"
-            Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-connecting.flag
+
+        Write-Host "        Waiting for client-connected"
+        Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-connected.flag
+
+        if (!$TestCommunication) {
             Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
         }
 
