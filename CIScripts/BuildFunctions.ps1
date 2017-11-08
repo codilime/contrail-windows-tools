@@ -96,6 +96,10 @@ function Invoke-DockerDriverBuild {
     $Env:GOPATH=pwd
     $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
 
+    $Job.Step("Contrail-go-api source code generation", {
+        python tools/generateds/generateDS.py -f -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ -g golang-api controller/src/schema/vnc_cfg.xsd
+    })
+
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
@@ -178,7 +182,8 @@ function Invoke-AgentBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath)
+           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
+           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Agent build")
 
@@ -186,8 +191,11 @@ function Invoke-AgentBuild {
         Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
     })
 
+    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+    $BuildModeOption = "--optimization=" + $BuildMode
+
     $Job.Step("Building API", {
-        scons controller/src/vnsw/contrail_vrouter_api:sdist
+        scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
         }
@@ -227,8 +235,7 @@ function Invoke-AgentBuild {
         if ($Tests.count -gt 0) {
             $TestsString = $Tests -join " "
         }
-        $BuildCommand = "scons contrail-vrouter-agent.msi -j 4"
-        $AgentAndTestsBuildCommand = "{0} {1}" -f "$BuildCommand", "$TestsString"
+        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" -f "$BuildModeOption", "$TestsString"
         Invoke-Expression $AgentAndTestsBuildCommand
 
         if ($LASTEXITCODE -ne 0) {
@@ -236,7 +243,7 @@ function Invoke-AgentBuild {
         }
     })
 
-    $agentMSI = "build\debug\vnsw\agent\contrail\contrail-vrouter-agent.msi"
+    $agentMSI = "build\{0}\vnsw\agent\contrail\contrail-vrouter-agent.msi" -f $BuildMode
 
     Write-Host "Signing agentMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
