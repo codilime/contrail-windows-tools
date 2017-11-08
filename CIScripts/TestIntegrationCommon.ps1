@@ -1,12 +1,8 @@
-
 . $PSScriptRoot\Common.ps1
-
-# Source Job monitoring classes
-. $PSScriptRoot\Job.ps1
-$Job = [Job]::new("Deploy and test")
-
 . $PSScriptRoot\VMUtils.ps1
 . $PSScriptRoot\RunTests.ps1
+. $PSScriptRoot\Job.ps1
+$Job = [Job]::new("Deploy and test")
 
 $ArtifactsDir = $Env:ARTIFACTS_DIR
 

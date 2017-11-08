@@ -1,3 +1,6 @@
+. $PSScriptRoot\InitializeCIScript.ps1
+
+# Create PSSessionT alias
 $Accel = [PowerShell].Assembly.GetType("System.Management.Automation.TypeAccelerators")
 $Accel::add("PSSessionT", "System.Management.Automation.Runspaces.PSSession")
 
