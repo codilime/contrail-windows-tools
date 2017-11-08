@@ -132,7 +132,6 @@ function Invoke-DockerDriverBuild {
         Copy-Item bin/* $OutputPath
     })
 
-
     $Job.PopStep()
 }
 
@@ -141,8 +140,8 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false,
-           [Parameter(Mandatory = $true)] [string] $OutputPath)
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Extension build")
 
@@ -187,8 +186,8 @@ function Invoke-AgentBuild {
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false,
-           [Parameter(Mandatory = $true)] [string] $OutputPath)
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Agent build")
 
@@ -257,7 +256,7 @@ function Invoke-AgentBuild {
     $Job.Step("Copying artifacts to $OutputPath", {
         $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
         $testInisPath = "controller\src\vnsw\agent\test"
-        $libxmlPath = "build/bin/libxml2.dll"
+        $libxmlPath = "build\bin\libxml2.dll"
 
         Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
         Copy-Item $agentMSI $OutputPath -Recurse -Container
