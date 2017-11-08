@@ -173,10 +173,10 @@ function Invoke-ExtensionBuild {
     $vTestPath = "build\{0}\vrouter\utils\vtest\"
 
     $Job.Step("Copying artifacts to $OutputPath", {
-        Copy-Item $utilsMSI $OutputPath
-        Copy-Item $vRouterMSI $OutputPath
-        Copy-Item $CertPath $OutputPath
-        Copy-Item -Recurse $vTestPath "$OutputPath\utils\vtest"
+        Copy-Item $utilsMSI $OutputPath -Recurse -Container
+        Copy-Item $vRouterMSI $OutputPath -Recurse -Container
+        Copy-Item $CertPath $OutputPath -Recurse -Container
+        Copy-Item -Recurse $vTestPath "$OutputPath\utils\vtest" -Recurse -Container
     })
 
     $Job.PopStep()
@@ -259,11 +259,11 @@ function Invoke-AgentBuild {
         $testInisPath = "controller\src\vnsw\agent\test"
         $libxmlPath = "build/bin/libxml2.dll"
 
-        Copy-Item $vRouterApiPath $OutputPath
-        Copy-Item $agentMSI $OutputPath
-        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath # This copies all test executables
+        Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
+        Copy-Item $agentMSI $OutputPath -Recurse -Container
+        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath -Container # This copies all test executables 
         Copy-Item -Path $testInisPath -Include "*.ini" -Destination $OutputPath
-        Copy-Item $libxmlPath $OutputPath
+        Copy-Item $libxmlPath $OutputPath -Recurse -Container
     })
 
     $Job.PopStep()
