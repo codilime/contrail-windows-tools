@@ -6,21 +6,7 @@ $ToolsAllowBranchOverride = $true
 
 # Additional logic for builds triggered from Gerrit
 if (Test-Path Env:GERRIT_CHANGE_ID)  {
-    $whitelist_domain = "codilime.com"
-    $whitelist_emails = @('sagarc@juniper.net')
-    Write-Output "Running Gerrit-trigger preparations..."
-    # exit early with success if the event does not originate from a whitelisted account
-    $run = $false
-    if ($Env:GERRIT_CHANGE_OWNER_EMAIL.EndsWith($whitelist_domain) -or $Env:GERRIT_PATCHSET_UPLOADER_EMAIL.EndsWith($whitelist_domain)) {
-        $run = $true
-    }
-    if ($whitelist_emails.Contains($Env:GERRIT_CHANGE_OWNER_EMAIL) -or $whitelist_emails.Contains($Env:GERRIT_PATCHSET_UPLOADER_EMAIL)) {
-        $run = $true
-    }
-    if (!$run) {
-        Write-Output "Exiting because the event author is not on the whitelist. Change owner email: $Env:GERRIT_CHANGE_OWNER_EMAIL, Patchset owner email: $Env:GERRIT_PATCHSET_UPLOADER_EMAIL, Whitelist: *@$whitelist_domain, $whitelist_emails"
-        Exit 0
-    }
+
     #$Env:DRIVER_REPO_URL = 
     #$Env:WINDOWSSTUBS_REPO_URL = 
     $Env:TOOLS_REPO_URL = "https://$Env:GERRIT_HOST/Juniper/contrail-build"
