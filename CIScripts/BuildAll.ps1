@@ -7,8 +7,8 @@ $ToolsAllowBranchOverride = $true
 # Additional logic for builds triggered from Gerrit
 if (Test-Path Env:GERRIT_CHANGE_ID)  {
 
-    #$Env:DRIVER_REPO_URL = 
-    #$Env:WINDOWSSTUBS_REPO_URL = 
+    #$Env:DRIVER_REPO_URL =
+    #$Env:WINDOWSSTUBS_REPO_URL =
     $Env:TOOLS_REPO_URL = "https://$Env:GERRIT_HOST/Juniper/contrail-build"
     $Env:SANDESH_REPO_URL = "https://$Env:GERRIT_HOST/Juniper/contrail-sandesh"
     $Env:GENERATEDS_REPO_URL = "https://$Env:GERRIT_HOST/Juniper/contrail-generateDS"
@@ -38,7 +38,8 @@ $repo_map = @{
     "contrail-controller" = "controller";
     "contrail-sandesh" = "tools/sandesh";
     "contrail-build" = "tools/build";
-    "contrail-vrouter" = "vrouter"
+    "contrail-vrouter" = "vrouter";
+    "contrail-generateDS" = "tools/generateDS"
 }
 
 $Repos = @(
