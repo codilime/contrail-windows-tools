@@ -22,6 +22,8 @@ function Run-Test {
         $Res = Invoke-Command -ScriptBlock {
             $ErrorActionPreference = "SilentlyContinue"
             Set-Location C:\Artifacts
+            # TODO remove
+            Write-Host $Env:TASK_UTIL_WAIT_TIME
             $TestOutput = Invoke-Expression "C:\Artifacts\$using:TestExecutable --config C:\Artifacts\vnswa_cfg.ini"
 
             # This is a workaround for the following bug:
@@ -81,7 +83,6 @@ function Test-Agent {
         $AgentTextExecutables = $AgentTextExecutables | Select -Unique
 
         Foreach ($TestExecutable in $AgentTextExecutables) {
-            Write-Host $Env:TASK_UTIL_WAIT_TIME
             $TestRes = Run-Test -Session $Session -TestExecutable $TestExecutable
             if ($TestRes -ne 0) {
                 $Res = 1
