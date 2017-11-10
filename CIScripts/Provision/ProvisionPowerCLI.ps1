@@ -1,10 +1,11 @@
-. $PSScriptRoot\..\Common.ps1
+. $PSScriptRoot\..\Common\VMUtils.ps1
+. $PSScriptRoot\UtilsPowerCLI.ps1
 
-function Deploy-Legacy {
+function Provision-PowerCLI {
     Param ([Parameter(Mandatory = $true)] [int] $VMsNeeded,
            [Parameter(Mandatory = $true)] [bool] $IsReleaseMode)
 
-    $Job.PushStep("Deploying using Legacy method")
+    $Job.PushStep("Provisioning using PowerCLI")
 
     $VIServerAccessData = [VIServerAccessData] @{
         Username = $Env:VISERVER_USERNAME;
@@ -54,10 +55,10 @@ function Deploy-Legacy {
     return $Sessions, $VMNames
 }
 
-function Teardown-Legacy {
+function Teardown-PowerCLI {
     Param ([Parameter(Mandatory = $true)] [string[]] $VMNames)
 
-    $Job.Step("Teardown using Legacy method", {
+    $Job.Step("Teardown using PowerCLI", {
         $VIServerAccessData = [VIServerAccessData] @{
             Username = $Env:VISERVER_USERNAME;
             Password = $Env:VISERVER_PASSWORD;
