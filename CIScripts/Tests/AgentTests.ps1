@@ -22,8 +22,6 @@ function Run-Test {
         $Res = Invoke-Command -ScriptBlock {
             $ErrorActionPreference = "SilentlyContinue"
             Set-Location C:\Artifacts
-            # TODO remove
-            Write-Host $Env:TASK_UTIL_WAIT_TIME
             $TestOutput = Invoke-Expression "C:\Artifacts\$using:TestExecutable --config C:\Artifacts\vnswa_cfg.ini"
 
             # This is a workaround for the following bug:
