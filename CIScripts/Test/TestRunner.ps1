@@ -1,4 +1,4 @@
-. $PSScriptRoot\Tests\TestConfigurationUtils.ps1
+. $PSScriptRoot\TestConfigurationUtils.ps1
 
 . $PSScriptRoot\Tests\AgentServiceTests.ps1
 . $PSScriptRoot\Tests\AgentTests.ps1

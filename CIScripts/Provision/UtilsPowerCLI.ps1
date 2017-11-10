@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Common.ps1
+. $PSScriptRoot\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\Common\Aliases.ps1
 
 class NewVMCreationSettings {
