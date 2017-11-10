@@ -1201,9 +1201,9 @@ function Test-VRouterAgentIntegration {
         Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnIcmpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
+        Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-TcpTrafficSingleNet -Session $Session1 -TestConfiguration $TestConfiguration
         Test-MultihostTcpTrafficSingleNet -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-        Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-MultihostUdpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
     })
 
