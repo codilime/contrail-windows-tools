@@ -11,8 +11,8 @@ for ($i = 0; $i -lt $VMNames.Count; $i++) {
     $VMNames[$i] = Get-SanitizedOrGeneratedVMName -VMName $VMNames[$i] -RandomNamePrefix "Test-"
 }
 
-Write-Host "Starting Testbeds:"
-$VMNames.ForEach({ Write-Host $_ })
+Write-Output "Starting Testbeds:"
+$VMNames.ForEach({ Write-Output $_ })
 
 if ($ReleaseModeBuild) {
     $Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
@@ -25,5 +25,5 @@ if ($ReleaseModeBuild) {
         -CopyMsvcDebugDlls -MsvcDebugDllsDir $Env:MSVC_DEBUG_DLLS_DIR
 }
 
-Write-Host "Started Testbeds:"
-$Sessions.ForEach({ Write-Host $_.ComputerName })
+Write-Output "Started Testbeds:"
+$Sessions.ForEach({ Write-Output $_.ComputerName })
