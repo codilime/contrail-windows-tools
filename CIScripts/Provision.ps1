@@ -6,9 +6,6 @@
 
 $Job = [Job]::new("Provision")
 
-# TODO: $IsReleaseMode
-$IsReleaseMode = $false # false for now
-
-$TestbedSessions, $TestbedVMNames = Provision-PowerCLI -VMsNeeded 2 -IsReleaseMode $IsReleaseMode
+$TestbedSessions, $TestbedVMNames = Provision-PowerCLI -VMsNeeded 2 -IsReleaseMode $ReleaseModeBuild
 
 $Job.Done()
