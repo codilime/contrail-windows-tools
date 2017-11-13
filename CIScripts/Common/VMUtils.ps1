@@ -16,6 +16,9 @@ function New-RemoteSessions {
 
         Invoke-Command -Session $Sess -ScriptBlock {
             $ErrorActionPreference = "Stop"
+
+            # Refresh PATH
+            $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
         }
 
         $Sessions += $Sess
