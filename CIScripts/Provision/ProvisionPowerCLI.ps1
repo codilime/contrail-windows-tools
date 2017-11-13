@@ -1,5 +1,6 @@
 . $PSScriptRoot\..\Common\VMUtils.ps1
 . $PSScriptRoot\UtilsPowerCLI.ps1
+. $PSScriptRoot\VIServer.ps1
 
 function Provision-PowerCLI {
     Param ([Parameter(Mandatory = $true)] [int] $VMsNeeded,
