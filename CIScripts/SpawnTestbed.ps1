@@ -1,22 +1,7 @@
-. $PSScriptRoot\InitializeCIScript.ps1
+# Spawn-Testbed job consolidates Provision and Deploy. It's a utility job to
+# ease the development process.
+# This will likely be replaced with once whole test env blocks are implemented
+# fully.
 
-# Sourcing VM management functions
-. $PSScriptRoot\VMUtils.ps1
-
-# Setting all variables needed for New-TestbedVMs from Environment
-. $PSScriptRoot\SetCommonVariablesForNewVMsFromEnv.ps1
-
-$VMNames = $Env:VM_NAMES.Split(",")
-for ($i = 0; $i -lt $VMNames.Count; $i++) {
-    $VMNames[$i] = Get-SanitizedOrGeneratedVMName -VMName $VMNames[$i] -RandomNamePrefix "Test-"
-}
-
-Write-Output "Starting Testbeds:"
-$VMNames.ForEach({ Write-Output $_ })
-
-$Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
-    -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials -ArtifactsDir $ArtifactsDir `
-    -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes
-
-Write-Output "Started Testbeds:"
-$Sessions.ForEach({ Write-Output $_.ComputerName })
+. $PSScriptRoot\Provision.ps1
+. $PSScriptRoot\Deploy.ps1
