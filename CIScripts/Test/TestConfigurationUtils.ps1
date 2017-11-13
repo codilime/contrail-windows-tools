@@ -161,6 +161,14 @@ function Test-IsDockerDriverEnabled {
     return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
 }
 
+function Test-IsDockerDriverListening {
+    Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session)
+
+    return Invoke-Command -Session $Session -ScriptBlock {
+        return Test-Path //./pipe/Contrail
+    }
+}
+
 function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -292,10 +300,11 @@ function Initialize-TestConfiguration {
     $SleepTimeBetweenChecks = 10;
     $MaxNumberOfChecks = $WaitForSeconds / $SleepTimeBetweenChecks
 
-    # Wait for vRouter Extension to be started by DockerDriver
+    # Wait for DockerDriver to listen.
+    # (Docker driver should listen only after enabling extension)
     $Res = $false
     for ($RetryNum = $MaxNumberOfChecks; $RetryNum -gt 0; $RetryNum--) {
-        $Res = Test-IsVRouterExtensionEnabled -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
+        $Res = Test-IsDockerDriverListening -Session $Session
         if ($Res -eq $true) {
             break;
         }
@@ -303,6 +312,11 @@ function Initialize-TestConfiguration {
         Start-Sleep -s $SleepTimeBetweenChecks
     }
 
+    if ($Res -ne $true) {
+        throw "Docker driver is not listening."
+    }
+
+    $Res = Test-IsVRouterExtensionEnabled -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
     if ($Res -ne $true) {
         throw "Extension was not enabled or is not running."
     }
