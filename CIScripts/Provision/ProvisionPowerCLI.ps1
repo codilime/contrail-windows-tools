@@ -38,12 +38,12 @@ function Provision-PowerCLI {
     $VMCredentials = Get-VMCreds
 
     if ($IsReleaseMode) {
-        $Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
-            -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials -ArtifactsDir $ArtifactsDir `
+        $Sessions = New-TestbedVMs -VMNames $VMNames -VIServerAccessData $VIServerAccessData `
+            -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials `
             -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes
     } else {
-        $Sessions = New-TestbedVMs -VMNames $VMNames -InstallArtifacts $true -VIServerAccessData $VIServerAccessData `
-            -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials -ArtifactsDir $ArtifactsDir `
+        $Sessions = New-TestbedVMs -VMNames $VMNames -VIServerAccessData $VIServerAccessData `
+            -VMCreationSettings $VMCreationSettings -VMCredentials $VMCredentials `
             -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName -MaxWaitVMMinutes $MaxWaitVMMinutes `
             -CopyMsvcDebugDlls -MsvcDebugDllsDir $Env:MSVC_DEBUG_DLLS_DIR
     }

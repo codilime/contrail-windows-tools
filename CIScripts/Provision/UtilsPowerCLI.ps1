@@ -12,11 +12,9 @@ class NewVMCreationSettings {
 function New-TestbedVMs {
     [CmdletBinding(DefaultParametersetName = "None")]
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of names of created VMs")] [string[]] $VMNames,
-           [Parameter(Mandatory = $true, HelpMessage = "Flag indicating if we should install all artifacts on spawned VMs")] [bool] $InstallArtifacts,
            [Parameter(Mandatory = $true, HelpMessage = "Access data for VIServer")] [VIServerAccessData] $VIServerAccessData,
            [Parameter(Mandatory = $true, HelpMessage = "Settings required for creating new VM")] [NewVMCreationSettings] $VMCreationSettings,
            [Parameter(Mandatory = $true, HelpMessage = "Credentials required to access created VMs")] [PSCredentialT] $VMCredentials,
-           [Parameter(Mandatory = $true, HelpMessage = "Directory with artifacts collected from other jobs")] [string] $ArtifactsDir,
            [Parameter(Mandatory = $true, HelpMessage = "Location of crash dump files")] [string] $DumpFilesLocation,
            [Parameter(Mandatory = $true, HelpMessage = "Crash dump files base name (prefix)")] [string] $DumpFilesBaseName,
            [Parameter(Mandatory = $true, HelpMessage = "Max time to wait for VMs")] [int] $MaxWaitVMMinutes,
@@ -119,11 +117,6 @@ function New-TestbedVMs {
         Initialize-CrashDumpSaving -Session $_ -DumpFilesLocation $DumpFilesLocation -DumpFilesBaseName $DumpFilesBaseName
         Enable-NBLDebugging -Session $_
     })
-
-    if ($InstallArtifacts -eq $true) {
-        Write-Host "Installing artifacts"
-        Provision-Testbeds -Sessions $Sessions -ArtifactsDir $ArtifactsDir
-    }
 
     if ($CopyMsvcDebugDlls.IsPresent) {
         Write-Host "Copying MSVC debug DLLs"
