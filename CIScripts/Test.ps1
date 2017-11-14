@@ -5,12 +5,11 @@
 
 $Job = [Job]::new("Test")
 
-echo $Env:VM_USERNAME
 $Creds = Get-VMCreds
-$TestbedVMNames = $Env:VM_NAMES.Split(",")
-$Sessions = New-RemoteSessions -VMNames $TestbedVMNames -Credentials $Creds
 
-if($Sessions) {
+if($Env:VM_NAMES) {
+    $TestbedVMNames = $Env:VM_NAMES.Split(",")
+    $Sessions = New-RemoteSessions -VMNames $TestbedVMNames -Credentials $Creds
     Run-Tests -Sessions $Sessions
 }
 
