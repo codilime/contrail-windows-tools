@@ -22,7 +22,7 @@ stage('Preparation') {
                 -ControllerBranch "windows3.1" `
                 -ThirdPartyCachePath "C:/BUILD_DEPENDENCIES/third_party_cache/" `
                 -DriverSrcPath "github.com/codilime/contrail-windows-docker" `
-                -VSSetupEnvScriptPath "C:/ewdk/Program Files/Microsoft Visual Studio 14.0/vc/bin/amd64/vcvars64.bate" ` 
+                -VSSetupEnvScriptPath "C:/ewdk/Program Files/Microsoft Visual Studio 14.0/vc/bin/amd64/vcvars64.bat" ` 
                 -IsReleaseMode "$True" `
                 -SigntoolPath "C:/ewdk/Program Files/Windows Kits/10/bin/x64/signtool.exe" `
                 -CertPath "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx" `
