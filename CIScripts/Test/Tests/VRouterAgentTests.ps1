@@ -1034,9 +1034,7 @@ function Test-VRouterAgentIntegration {
         Write-Host "        Waiting for client-connected"
         Wait-RemoteFile -Session $Session1 -ContainerName $Container1Name -Path /client-connected.flag
 
-        if (!$TestCommunication) {
-            Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
-        }
+        Start-Sleep -Seconds $WAIT_TIME_FOR_FLOW_TABLE_UPDATE_IN_SECONDS
 
         if ($TestFlowInjection) {
             Write-Host "======> Then: Flow should be created for TCP protocol"
