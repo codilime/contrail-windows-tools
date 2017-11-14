@@ -33,11 +33,16 @@ stage('Preparation') {
 stage('Provision') {
     node('master') {
         sh 'echo "Tu będzie ansible"'
+        // set $TestbedVMNames
     }
 }
 stage('Deploy') {
     node('tester') {
-        bat 'echo "Tu będzie deploy"'
+        deleteDir()
+        git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
+        dir('CIScripts') {
+            powershell script: './Deploy.ps1'
+        }
     }
 }
 stage('Test') {
@@ -45,6 +50,7 @@ stage('Test') {
         deleteDir()
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         dir('CIScripts') {
+            powershell script: './Test.ps1'
         }
     }
 }

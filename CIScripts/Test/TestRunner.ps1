@@ -19,6 +19,10 @@
 function Run-Tests {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
+    if(-not $Sessions) {
+        return
+    }
+
     $Job.Step("Running all integration tests", {
 
         $SingleSubnetNetworkConfiguration = [NetworkConfiguration] @{
