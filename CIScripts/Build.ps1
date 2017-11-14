@@ -18,7 +18,7 @@ Param ([Parameter(Mandatory = $false)] [string] $DriverRepoURL      =$Env:DRIVER
        [Parameter(Mandatory = $false)] [string] $ThirdPartyCachePath    =$Env:THIRD_PARTY_CACHE_PATH,
        [Parameter(Mandatory = $false)] [string] $DriverSrcPath          =$Env:DRIVER_SRC_PATH,
        [Parameter(Mandatory = $false)] [string] $VSSetupEnvScriptPath   =$Env:VS_SETUP_ENV_SCRIPT_PATH,
-       [Parameter(Mandatory = $false)] [bool]   $IsReleaseMode  =$Env:BUILD_IN_RELEASE_MODE,
+       [Parameter(Mandatory = $false)] [bool]   $IsReleaseMode      =[bool]::Parse($Env:BUILD_IN_RELEASE_MODE),
        [Parameter(Mandatory = $false)] [string] $SigntoolPath       =$Env:SIGNTOOL_PATH,
        [Parameter(Mandatory = $false)] [string] $CertPath           =$Env:CERT_PATH,
        [Parameter(Mandatory = $false)] [string] $CertPasswordPath   =$Env:CERT_PASSWORD_FILE_PATH)
