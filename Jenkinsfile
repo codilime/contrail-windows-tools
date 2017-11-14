@@ -41,6 +41,7 @@ stage('Deploy') {
         deleteDir()
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         dir('CIScripts') {
+            env.ARTIFACTS_DIR = "output"
             powershell script: './Deploy.ps1'
         }
     }
