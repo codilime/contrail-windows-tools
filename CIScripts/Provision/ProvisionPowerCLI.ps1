@@ -53,7 +53,7 @@ function Provision-PowerCLI {
 
     $Job.PopStep()
 
-    return $Sessions, $VMNames
+    return $VMNames
 }
 
 function Teardown-PowerCLI {

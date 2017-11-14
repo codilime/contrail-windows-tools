@@ -6,6 +6,6 @@
 
 $Job = [Job]::new("Provision")
 
-$TestbedSessions, $TestbedVMNames = Provision-PowerCLI -VMsNeeded 2 -IsReleaseMode $ReleaseModeBuild
+$Env:TESTBED_HOSTNAMES = Provision-PowerCLI -VMsNeeded 2 -IsReleaseMode $ReleaseModeBuild
 
 $Job.Done()
