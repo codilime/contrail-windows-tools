@@ -7,7 +7,7 @@ $Job = [Job]::new("Test")
 
 echo $Env:VM_USERNAME
 $Creds = Get-VMCreds
-$TestbedVMNames = $VMNames.Split(",")
+$TestbedVMNames = $Env:VM_NAMES.Split(",")
 $Sessions = New-RemoteSessions -VMNames $TestbedVMNames -Credentials $Creds
 
 if($Sessions) {
