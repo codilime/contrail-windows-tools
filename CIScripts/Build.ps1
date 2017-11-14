@@ -4,8 +4,6 @@
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 
-echo $Env:DRIVER_REPO_URL
-
 $Repos = @(
     [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker", "master"),
     [Repo]::new($Env:TOOLS_REPO_URL, $Env:TOOLS_BRANCH, "tools/build/", "windows"),
