@@ -325,11 +325,6 @@ function Initialize-TestConfiguration {
         throw "Docker driver was not enabled."
     }
 
-    $Res = Test-IsVRouterExtensionEnabled -Session $Session -VMSwitchName $TestConfiguration.VMSwitchName -ForwardingExtensionName $TestConfiguration.ForwardingExtensionName
-    if ($Res -ne $true) {
-        throw "Extension was not enabled or is not running."
-    }
-
     if (!$NoNetwork) {
         New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration | Out-Null
     }
