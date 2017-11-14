@@ -28,6 +28,8 @@ Param ([Parameter(Mandatory = $false)] [string] $DriverRepoURL      = $Env:DRIVE
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 
+echo $Env:DRIVER_REPO_URL
+
 $Repos = @(
     [Repo]::new($DriverRepoURL, $DriverBranch, "src/github.com/codilime/contrail-windows-docker", "master"),
     [Repo]::new($ToolsRepoURL, $ToolsBranch, "tools/build/", "windows"),
