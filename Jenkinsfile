@@ -26,14 +26,19 @@ stage('Preparation') {
             env.CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
             env.CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
 
-            powershell script: './Build.ps1'
+            // powershell script: './Build.ps1'
+
+            stash "output"
         }
     }
 }
+
+def SpawnedTestbedVMNames = ''
+
 stage('Provision') {
     node('master') {
         sh 'echo "Tu będzie ansible"'
-        // set $TestbedVMNames
+        // set $SpawnedTestbedVMNames here
     }
 }
 stage('Deploy') {
@@ -41,6 +46,7 @@ stage('Deploy') {
         deleteDir()
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         dir('CIScripts') {
+            unstash "output"
             env.ARTIFACTS_DIR = "output"
             powershell script: './Deploy.ps1'
         }
@@ -51,6 +57,8 @@ stage('Test') {
         deleteDir()
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         dir('CIScripts') {
+            unstash "output"
+            env.ARTIFACTS_DIR = "output"
             powershell script: './Test.ps1'
         }
     }
