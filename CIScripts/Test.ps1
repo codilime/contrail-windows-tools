@@ -6,6 +6,7 @@
 $Job = [Job]::new("Test")
 
 $Creds = Get-VMCreds
+$TestbedVMNames = $VMNames.Split(",")
 $Sessions = New-RemoteSessions -VMNames $TestbedVMNames -Credentials $Creds
 
 Run-Tests -Sessions $Sessions
