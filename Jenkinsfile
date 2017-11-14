@@ -47,7 +47,7 @@ stage('Deploy') {
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         dir('CIScripts') {
             unstash "output"
-            env.VM_NAMES = SpawnedTestbedVMNames
+            env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
             env.ARTIFACTS_DIR = "output"
             powershell script: './Deploy.ps1'
         }
@@ -59,7 +59,7 @@ stage('Test') {
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         dir('CIScripts') {
             unstash "output"
-            env.VM_NAMES = SpawnedTestbedVMNames
+            env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
             env.ARTIFACTS_DIR = "output"
             powershell script: './Test.ps1'
         }

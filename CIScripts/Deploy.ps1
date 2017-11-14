@@ -11,9 +11,9 @@ $Job = [Job]::new("Deploy")
 $Creds = Get-VMCreds
 $ArtifactsDir = $Env:ARTIFACTS_DIR
 
-if($Env:VM_NAMES) {
-    $TestbedVMNames = $Env:VM_NAMES.Split(",")
-    $Sessions = New-RemoteSessions -VMNames $TestbedVMNames -Credentials $Creds
+if($Env:TESTBED_HOSTNAMES) {
+    $Testbeds = $Env:TESTBED_HOSTNAMES.Split(",")
+    $Sessions = New-RemoteSessions -VMNames $Testbeds -Credentials $Creds
     Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
 }
 
