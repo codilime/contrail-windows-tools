@@ -13,6 +13,8 @@ $ArtifactsDir = $Env:ARTIFACTS_DIR
 $TestbedVMNames = $VMNames.Split(",")
 $Sessions = New-RemoteSessions -VMNames $TestbedVMNames -Credentials $Creds
 
-Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
+if($Sessions) {
+    Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
+}
 
 $Job.Done()
