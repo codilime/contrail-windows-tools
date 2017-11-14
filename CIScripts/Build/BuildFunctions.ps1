@@ -23,19 +23,16 @@ function Clone-Repos {
             # Otherwise, use branch specific for this repo.
             $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
 
-            Write-Error "asdf"
-            Write-Host "asafsdfadsfasdfasdfasfsadfdf"
             Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
-            Write-Error $CustomMultiBranch
-            Write-Error $_.Url
-            Write-Error $_.Dir
-            git clone -b $CustomMultiBranch $_.Url $_.Dir
-            Write-Error "asdf2222"
-            Write-Host "asdf2asdfadsfasdfadsfasdf222"
+
+            # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
+            # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
+            # can't handle it and throws a Write-ErrorException.
+            git clone -q -b $CustomMultiBranch $_.Url $_.Dir
 
             if ($LASTEXITCODE -ne 0) {
                 Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-                git clone -b $_.Branch $_.Url $_.Dir
+                git clone -q -b $_.Branch $_.Url $_.Dir
 
                 if ($LASTEXITCODE -ne 0) {
                     throw "Cloning from " + $_.Url + " failed"

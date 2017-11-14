@@ -38,6 +38,8 @@ $Repos = @(
     [Repo]::new($ControllerRepoURL, $ControllerBranch, "controller/", "windows3.1")
 )
 
+echo "Path is " + $Env:PATH
+
 $Job = [Job]::new("Build")
 
 Clone-Repos -Repos $Repos
