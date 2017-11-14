@@ -380,6 +380,24 @@ function Test-VRouterAgentIntegration {
         }
     }
 
+    function Stop-TcpListener {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+        Invoke-Command -Session $Session {
+            Stop-Job $JobListener
+            Remove-Job $JobListener
+        }
+    }
+
+    function Stop-TcpSender {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+        Invoke-Command -Session $Session {
+            Stop-Job $JobSender
+            Remove-Job $JobSender
+        }
+    }
+
     function Create-ContainerInRemoteSession {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [string] $NetworkName,
@@ -1044,6 +1062,10 @@ function Test-VRouterAgentIntegration {
                 Assert-SomeFlowsEvicted -Session $Session1 -Proto "tcp"
             }
         }
+
+        Write-Host "Stopping sender and listener jobs."
+        Stop-TcpSender -Session $Session1
+        Stop-TcpListener -Session $Session2
 
         Write-Host "Removing containers: $Container1Name and $Container2Name."
         Remove-ContainerInRemoteSession -Session $Session1 -ContainerName $Container1Name | Out-Null
