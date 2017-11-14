@@ -5,22 +5,20 @@ Param ([Parameter(Mandatory = $false)] [string] $DriverRepoURL      =$Env:DRIVER
        [Parameter(Mandatory = $false)] [string] $ToolsRepoURL       =$Env:TOOLS_REPO_URL,
        [Parameter(Mandatory = $false)] [string] $ToolsBranch        =$Env:TOOLS_BRANCH,
        [Parameter(Mandatory = $false)] [string] $SandeshRepoURL     =$Env:SANDESH_REPO_URL,
-       [Parameter(Mandatory = $false)] [string] $SandeshRepoURL     =$Env:SANDESH_BRANCH,
+       [Parameter(Mandatory = $false)] [string] $SandeshBranch     =$Env:SANDESH_BRANCH,
        [Parameter(Mandatory = $false)] [string] $GenerateDSRepoURL  =$Env:GENERATEDS_REPO_URL,
-       [Parameter(Mandatory = $false)] [string] $GenerateDSRepoURL  =$Env:GENERATEDS_BRANCH,
+       [Parameter(Mandatory = $false)] [string] $GenerateDSBranch  =$Env:GENERATEDS_BRANCH,
        [Parameter(Mandatory = $false)] [string] $VRouterRepoURL     =$Env:VROUTER_REPO_URL,
-       [Parameter(Mandatory = $false)] [string] $VRouterRepoURL     =$Env:VROUTER_BRANCH,
+       [Parameter(Mandatory = $false)] [string] $VRouterBranch     =$Env:VROUTER_BRANCH,
        [Parameter(Mandatory = $false)] [string] $WindowsStubsRepoURL=$Env:WINDOWSSTUBS_REPO_URL,
-       [Parameter(Mandatory = $false)] [string] $WindowsStubsRepoURL=$Env:WINDOWSSTUBS_BRANCH,
+       [Parameter(Mandatory = $false)] [string] $WindowsStubsBranch=$Env:WINDOWSSTUBS_BRANCH,
        [Parameter(Mandatory = $false)] [string] $ControllerRepoURL  =$Env:CONTROLLER_REPO_URL,
-       [Parameter(Mandatory = $false)] [string] $ControllerRepoURL  =$Env:CONTROLLER_BRANCH,
+       [Parameter(Mandatory = $false)] [string] $ControllerBranch  =$Env:CONTROLLER_BRANCH,
 
        [Parameter(Mandatory = $false)] [string] $ThirdPartyCachePath    =$Env:THIRD_PARTY_CACHE_PATH,
        [Parameter(Mandatory = $false)] [string] $DriverSrcPath          =$Env:DRIVER_SRC_PATH,
        [Parameter(Mandatory = $false)] [string] $VSSetupEnvScriptPath   =$Env:VS_SETUP_ENV_SCRIPT_PATH,
-
-       [Parameter(Mandatory = $false)] [string] $IsReleaseMode  =$Env:BUILD_IN_RELEASE_MODE,
-
+       [Parameter(Mandatory = $false)] [bool]   $IsReleaseMode  =$Env:BUILD_IN_RELEASE_MODE,
        [Parameter(Mandatory = $false)] [string] $SigntoolPath       =$Env:SIGNTOOL_PATH,
        [Parameter(Mandatory = $false)] [string] $CertPath           =$Env:CERT_PATH,
        [Parameter(Mandatory = $false)] [string] $CertPasswordPath   =$Env:CERT_PASSWORD_FILE_PATH)
