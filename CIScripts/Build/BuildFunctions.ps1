@@ -87,32 +87,30 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $OutputPath)
 
     $Job.PushStep("Docker driver build")
-    $GoPath=pwd
+    $GoPath = $Env:GOPATH
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
     $Job.Step("Contrail-go-api source code generation", {
-        $ErrorActionPreference = "SilentlyContinue"
         python tools/generateds/generateDS.py -q -f `
                                               -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                              -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1>$null
-        $ErrorActionPreference = "Stop"
+                                              -g golang-api controller/src/schema/vnc_cfg.xsd 2>$null
     })
 
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
     $Job.Step("Installing test runner", {
-        go get -u -v github.com/onsi/ginkgo/ginkgo
+        go get -u -v github.com/onsi/ginkgo/ginkgo 2>$null
     })
 
     $Job.Step("Building driver", {
-        go build -v $DriverSrcPath
+        go build -v $DriverSrcPath 2>$null
     })
 
     $Job.Step("Precompiling tests", {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
-            .\ginkgo.exe build $srcPath/$_
+            .\ginkgo.exe build $srcPath/$_ 2>$null
             Move-Item $srcPath/$_/$_.test ./
         })
     })
@@ -122,12 +120,13 @@ function Invoke-DockerDriverBuild {
     })
 
     $Job.Step("Intalling MSI builder", {
-        go get -u -v github.com/mh-cbon/go-msi
+        go get -u -v github.com/mh-cbon/go-msi 2>$null
     })
 
     $Job.Step("Building MSI", {
         Push-Location $srcPath
-        & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
+        & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
+                                    --src template --out $pwd/gomsi 2>$null
         Pop-Location
 
         Move-Item $srcPath/docker-driver.msi ./
@@ -166,7 +165,7 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
-        scons $BuildModeOption vrouter
+        scons $BuildModeOption vrouter 2>$null
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
         }
@@ -217,7 +216,7 @@ function Invoke-AgentBuild {
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building API", {
-        scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
+        scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist 2>$null
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
         }
