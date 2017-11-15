@@ -52,7 +52,7 @@ function Prepare-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
     $Job.Step("Sourcing VS environment variables", {
-        DeferExcept{(
+        DeferExcept({
             Invoke-BatchFile "$VSSetupEnvScriptPath"
         })
     })
