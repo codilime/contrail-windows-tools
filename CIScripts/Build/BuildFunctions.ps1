@@ -100,7 +100,7 @@ function Invoke-DockerDriverBuild {
         DeferExcept({
             python tools/generateds/generateDS.py -q -f `
                                                   -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                                  -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1
+                                                  -g golang-api controller/src/schema/vnc_cfg.xsd
         })
     })
 
@@ -109,13 +109,13 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Installing test runner", {
         DeferExcept({
-            go get -u -v github.com/onsi/ginkgo/ginkgo 2>&1
+            go get -u -v github.com/onsi/ginkgo/ginkgo
         })
     })
 
     $Job.Step("Building driver", {
         DeferExcept({
-            go build -v $DriverSrcPath 2>&1
+            go build -v $DriverSrcPath
         })
     })
 
@@ -123,7 +123,7 @@ function Invoke-DockerDriverBuild {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
             DeferExcept({
-                .\ginkgo.exe build $srcPath/$_ 2>&1
+                .\ginkgo.exe build $srcPath/$_
             })
             Move-Item $srcPath/$_/$_.test ./
         })
@@ -135,7 +135,7 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Intalling MSI builder", {
         DeferExcept({
-            go get -u -v github.com/mh-cbon/go-msi 2>&1
+            go get -u -v github.com/mh-cbon/go-msi
         })
     })
 
@@ -143,7 +143,7 @@ function Invoke-DockerDriverBuild {
         Push-Location $srcPath
         DeferExcept({
             & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
-                                        --src template --out $pwd/gomsi 2>&1
+                                        --src template --out $pwd/gomsi
         })
         Pop-Location
 
@@ -184,7 +184,7 @@ function Invoke-ExtensionBuild {
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
         DeferExcept({
-            scons $BuildModeOption vrouter 2>&1
+            scons $BuildModeOption vrouter
         })
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
@@ -237,7 +237,7 @@ function Invoke-AgentBuild {
 
     $Job.Step("Building API", {
         DeferExcept({
-            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist 2>&1
+            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
         })
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"

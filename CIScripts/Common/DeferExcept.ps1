@@ -13,7 +13,7 @@ function DeferExcept([scriptblock] $block) {
     return Invoke-Command -ScriptBlock {
         $ErrorActionPreference = "SilentlyContinue"
         $sb = [scriptblock]::Create($block)
-        & $sb 2>&1
+        & $sb
         if($LASTEXITCODE -ne 0) {
             $ErrorActionPreference = "Stop"
             throw "$LASTEXITCODE"
