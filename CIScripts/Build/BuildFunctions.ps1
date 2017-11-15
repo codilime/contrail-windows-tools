@@ -184,7 +184,7 @@ function Invoke-ExtensionBuild {
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
         DeferExcept({
-            scons $BuildModeOption vrouter
+            scons $BuildModeOption vrouter 2>&1
         })
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
