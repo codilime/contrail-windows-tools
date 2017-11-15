@@ -11,7 +11,7 @@ function DeferExcept([scriptblock] $block) {
     # when the command is running.
 
     return Invoke-Command -ScriptBlock {
-        $ErrorActionPreference = "SilentlyContinue"
+        $ErrorActionPreference = "Continue"
         $sb = [scriptblock]::Create($block)
         & $sb
         if($LASTEXITCODE -ne 0) {
