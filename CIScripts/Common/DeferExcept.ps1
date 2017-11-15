@@ -7,7 +7,7 @@ function DeferExcept([scriptblock] $block) {
     # We don't want this, but we also want to know whether the command was successful or not.
     # This is what this wrapper aims to do.
     # 
-    # This wrapper will throw only if the whole command failed. It will surpress any exceptions
+    # This wrapper will throw only if the whole command failed. It will suppress any exceptions
     # when the command is running.
 
     return Invoke-Command -ScriptBlock {

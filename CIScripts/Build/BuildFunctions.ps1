@@ -116,7 +116,7 @@ function Invoke-DockerDriverBuild {
     $Job.Step("Building driver", {
         DeferExcept({
             go build -v $DriverSrcPath
-        }
+        })
     })
 
     $Job.Step("Precompiling tests", {
