@@ -91,9 +91,11 @@ function Invoke-DockerDriverBuild {
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
     $Job.Step("Contrail-go-api source code generation", {
+        $ErrorActionPreference = "SilentlyContinue"
         python tools/generateds/generateDS.py -q -f `
                                               -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                              -g golang-api controller/src/schema/vnc_cfg.xsd | Out-Null
+                                              -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1>$null
+        $ErrorActionPreference = "Stop"
     })
 
     New-Item -ItemType Directory ./bin
