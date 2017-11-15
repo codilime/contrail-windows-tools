@@ -98,7 +98,7 @@ function Invoke-DockerDriverBuild {
                                               -g golang-api controller/src/schema/vnc_cfg.xsd })
     })
 
-    ls controller/src/schema/vnc_cfg.xsd
+    ls $srcPath/vendor/github.com/Juniper/contrail-go-api/types/
 
     New-Item -ItemType Directory ./bin
     Push-Location bin
