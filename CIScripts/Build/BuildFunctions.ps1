@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\Common\Noexcept.ps1
+
 class Repo {
     [string] $Url;
     [string] $Branch;
@@ -90,11 +92,11 @@ function Invoke-DockerDriverBuild {
     $GoPath = $Env:GOPATH
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
-    #//$Job.Step("Contrail-go-api source code generation", {
-        python tools/generateds/generateDS.py -q -f `
+    $Job.Step("Contrail-go-api source code generation", {
+        Noexcept({ python tools/generateds/generateDS.py -q -f `
                                               -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                              -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1 | Write-Host
-    #})
+                                              -g golang-api controller/src/schema/vnc_cfg.xsd })
+    })
 
     ls controller/src/schema/vnc_cfg.xsd
 
