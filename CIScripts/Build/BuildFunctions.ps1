@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Noexcept.ps1
+. $PSScriptRoot\..\Common\DeferExcept.ps1
 
 class Repo {
     [string] $Url;
@@ -30,11 +30,15 @@ function Clone-Repos {
             # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
             # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
             # can't handle it and throws a Write-ErrorException.
-            git clone -q -b $CustomMultiBranch $_.Url $_.Dir
+            DeferExcept({
+                git clone -q -b $CustomMultiBranch $_.Url $_.Dir
+            })
 
             if ($LASTEXITCODE -ne 0) {
                 Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-                git clone -q -b $_.Branch $_.Url $_.Dir
+                DeferExcept({
+                    git clone -q -b $_.Branch $_.Url $_.Dir
+                })
 
                 if ($LASTEXITCODE -ne 0) {
                     throw "Cloning from " + $_.Url + " failed"
@@ -93,28 +97,34 @@ function Invoke-DockerDriverBuild {
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
     $Job.Step("Contrail-go-api source code generation", {
-        Noexcept({ python tools/generateds/generateDS.py -q -f `
-                                              -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                              -g golang-api controller/src/schema/vnc_cfg.xsd })
+        DeferExcept({
+            python tools/generateds/generateDS.py -q -f `
+                                                  -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
+                                                  -g golang-api controller/src/schema/vnc_cfg.xsd
+        })
     })
-
-    ls $srcPath/vendor/github.com/Juniper/contrail-go-api/types/
 
     New-Item -ItemType Directory ./bin
     Push-Location bin
 
     $Job.Step("Installing test runner", {
-        go get -u -v github.com/onsi/ginkgo/ginkgo 2>$null
+        DeferExcept({
+            go get -u -v github.com/onsi/ginkgo/ginkgo
+        })
     })
 
     $Job.Step("Building driver", {
-        go build -v $DriverSrcPath 2>$null
+        DeferExcept({
+            go build -v $DriverSrcPath
+        }
     })
 
     $Job.Step("Precompiling tests", {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
-            .\ginkgo.exe build $srcPath/$_ 2>$null
+            DeferExcept({
+                .\ginkgo.exe build $srcPath/$_
+            })
             Move-Item $srcPath/$_/$_.test ./
         })
     })
@@ -124,13 +134,17 @@ function Invoke-DockerDriverBuild {
     })
 
     $Job.Step("Intalling MSI builder", {
-        go get -u -v github.com/mh-cbon/go-msi 2>$null
+        DeferExcept({
+            go get -u -v github.com/mh-cbon/go-msi
+        })
     })
 
     $Job.Step("Building MSI", {
         Push-Location $srcPath
-        & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
-                                    --src template --out $pwd/gomsi 2>$null
+        DeferExcept({
+            & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
+                                        --src template --out $pwd/gomsi
+        })
         Pop-Location
 
         Move-Item $srcPath/docker-driver.msi ./
@@ -169,7 +183,9 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
-        scons $BuildModeOption vrouter 2>$null
+        DeferExcept({
+            scons $BuildModeOption vrouter
+        })
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
         }
@@ -220,7 +236,9 @@ function Invoke-AgentBuild {
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building API", {
-        scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist 2>$null
+        DeferExcept({
+            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
+        })
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
         }
