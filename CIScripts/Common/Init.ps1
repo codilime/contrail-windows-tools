@@ -9,6 +9,4 @@ Set-PsDebug -Strict
 $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
 
 # Stop script on error
-#$ErrorActionPreference = "Stop"
-
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
