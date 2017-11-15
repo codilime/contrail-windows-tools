@@ -12,22 +12,27 @@ class Repo {
     }
 }
 
-function Copy-Repos {
+function Clone-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
 
     $Job.Step("Cloning repositories", {
-        $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) | Select-Object -ExpandProperty Branch -Unique)
+        $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) |
+                            Select-Object -ExpandProperty Branch -Unique)
         $Repos.ForEach({
             # If there is only one unique custom branch provided, at first try to use it for all repos.
             # Otherwise, use branch specific for this repo.
             $CustomMultiBranch = $(if ($CustomBranches.Count -eq 1) { $CustomBranches[0] } else { $_.Branch })
 
             Write-Host $("Cloning " +  $_.Url + " from branch: " + $CustomMultiBranch)
-            git clone -b $CustomMultiBranch $_.Url $_.Dir
+
+            # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
+            # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
+            # can't handle it and throws a Write-ErrorException.
+            git clone -q -b $CustomMultiBranch $_.Url $_.Dir
 
             if ($LASTEXITCODE -ne 0) {
                 Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-                git clone -b $_.Branch $_.Url $_.Dir
+                git clone -q -b $_.Branch $_.Url $_.Dir
 
                 if ($LASTEXITCODE -ne 0) {
                     throw "Cloning from " + $_.Url + " failed"
@@ -37,7 +42,7 @@ function Copy-Repos {
     })
 }
 
-function Invoke-ContrailCommonActions {
+function Prepare-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
     $Job.Step("Sourcing VS environment variables", {
@@ -82,11 +87,13 @@ function Invoke-DockerDriverBuild {
            [Parameter(Mandatory = $true)] [string] $OutputPath)
 
     $Job.PushStep("Docker driver build")
-    $Env:GOPATH=pwd
-    $srcPath = "$Env:GOPATH/src/$DriverSrcPath"
+    $GoPath=pwd
+    $srcPath = "$GoPath/src/$DriverSrcPath"
 
     $Job.Step("Contrail-go-api source code generation", {
-        python tools/generateds/generateDS.py -f -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ -g golang-api controller/src/schema/vnc_cfg.xsd
+        python tools/generateds/generateDS.py -q -f `
+                                              -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
+                                              -g golang-api controller/src/schema/vnc_cfg.xsd | Out-Null
     })
 
     New-Item -ItemType Directory ./bin
@@ -118,13 +125,16 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Building MSI", {
         Push-Location $srcPath
-        & "$Env:GOPATH/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
+        & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 --src template --out $pwd/gomsi
         Pop-Location
 
         Move-Item $srcPath/docker-driver.msi ./
     })
 
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath "docker-driver.msi"
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath "docker-driver.msi"
 
     Pop-Location
 
@@ -166,10 +176,16 @@ function Invoke-ExtensionBuild {
     $vTestPath = "$vRouterRoot\utils\vtest\"
 
     Write-Host "Signing utilsMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $utilsMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $utilsMSI
 
     Write-Host "Signing vRouterMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $vRouterMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $vRouterMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $utilsMSI $OutputPath -Recurse -Container
@@ -240,7 +256,8 @@ function Invoke-AgentBuild {
         if ($Tests.count -gt 0) {
             $TestsString = $Tests -join " "
         }
-        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" -f "$BuildModeOption", "$TestsString"
+        $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" `
+                                     -f "$BuildModeOption", "$TestsString"
         Invoke-Expression $AgentAndTestsBuildCommand
 
         if ($LASTEXITCODE -ne 0) {
@@ -252,7 +269,10 @@ function Invoke-AgentBuild {
     $agentMSI = "$rootBuildDir\vnsw\agent\contrail\contrail-vrouter-agent.msi"
 
     Write-Host "Signing agentMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath -CertPath $CertPath -CertPasswordFilePath $CertPasswordFilePath -MSIPath $agentMSI
+    Set-MSISignature -SigntoolPath $SigntoolPath `
+                     -CertPath $CertPath `
+                     -CertPasswordFilePath $CertPasswordFilePath `
+                     -MSIPath $agentMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
         $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
@@ -261,9 +281,11 @@ function Invoke-AgentBuild {
 
         Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
         Copy-Item $agentMSI $OutputPath -Recurse -Container
-        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath -Container # This copies all test executables 
         Copy-Item -Path $testInisPath -Include "*.ini" -Destination $OutputPath
         Copy-Item $libxmlPath $OutputPath -Recurse -Container
+
+        # This copies all test executables
+        Copy-Item -Path $rootBuildDir -Recurse -Include "*.exe" -Destination $OutputPath -Container
     })
 
     $Job.PopStep()
