@@ -100,7 +100,7 @@ function Invoke-DockerDriverBuild {
         DeferExcept({
             python tools/generateds/generateDS.py -q -f `
                                                   -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                                  -g golang-api controller/src/schema/vnc_cfg.xsd
+                                                  -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1
         })
     })
 
@@ -109,13 +109,13 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Installing test runner", {
         DeferExcept({
-            go get -u -v github.com/onsi/ginkgo/ginkgo
+            go get -u -v github.com/onsi/ginkgo/ginkgo 2>&1
         })
     })
 
     $Job.Step("Building driver", {
         DeferExcept({
-            go build -v $DriverSrcPath
+            go build -v $DriverSrcPath 2>&1
         })
     })
 
@@ -123,7 +123,7 @@ function Invoke-DockerDriverBuild {
         $modules = @("driver", "controller", "hns", "hnsManager")
         $modules.ForEach({
             DeferExcept({
-                .\ginkgo.exe build $srcPath/$_
+                .\ginkgo.exe build $srcPath/$_ 2>&1
             })
             Move-Item $srcPath/$_/$_.test ./
         })
@@ -135,7 +135,7 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Intalling MSI builder", {
         DeferExcept({
-            go get -u -v github.com/mh-cbon/go-msi
+            go get -u -v github.com/mh-cbon/go-msi 2>&1
         })
     })
 
@@ -143,7 +143,7 @@ function Invoke-DockerDriverBuild {
         Push-Location $srcPath
         DeferExcept({
             & "$GoPath/bin/go-msi" make --msi docker-driver.msi --arch x64 --version 0.1 `
-                                        --src template --out $pwd/gomsi
+                                        --src template --out $pwd/gomsi 2>&1
         })
         Pop-Location
 
@@ -237,7 +237,7 @@ function Invoke-AgentBuild {
 
     $Job.Step("Building API", {
         DeferExcept({
-            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
+            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist 2>&1
         })
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
