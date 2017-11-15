@@ -6,6 +6,17 @@
 
 $Job = [Job]::new("Provision")
 
-$Env:TESTBED_HOSTNAMES = Provision-PowerCLI -VMsNeeded 2 -IsReleaseMode $ReleaseModeBuild
+$VMNames = [System.Collections.ArrayList] @()
+if($Env:VM_NAMES) {
+    $VMNames = $Env:VM_NAMES.Split(",").ForEach({ Get-SanitizedOrGeneratedVMName -VMName $_ -RandomNamePrefix "Test-" })
+} else {
+    $VMBaseName = Get-SanitizedOrGeneratedVMName -VMName $Env:VM_NAME -RandomNamePrefix "Core-"
+    $VMsNeeded = 2
+    1..$VMsNeeded | ForEach-Object {
+        $VMNames += $VMBaseName + "-" + $_.ToString()
+    }
+}
+
+$Env:TESTBED_HOSTNAMES  = Provision-PowerCLI -VMNames $VMNames -IsReleaseMode $ReleaseModeBuild
 
 $Job.Done()
