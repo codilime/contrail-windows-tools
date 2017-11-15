@@ -93,8 +93,10 @@ function Invoke-DockerDriverBuild {
     $Job.Step("Contrail-go-api source code generation", {
         python tools/generateds/generateDS.py -q -f `
                                               -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
-                                              -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1
+                                              -g golang-api controller/src/schema/vnc_cfg.xsd 2>&1 | Write-Host
     })
+
+    ls controller/src/schema/vnc_cfg.xsd
 
     New-Item -ItemType Directory ./bin
     Push-Location bin
