@@ -17,8 +17,7 @@ $Repos = @(
 $Job = [Job]::new("Build")
 
 Clone-Repos -Repos $Repos
-Prepare-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-                         -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
+Prepare-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
 $IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
 
