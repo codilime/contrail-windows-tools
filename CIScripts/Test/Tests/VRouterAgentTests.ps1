@@ -904,7 +904,7 @@ function Test-VRouterAgentIntegration {
             Write-Host "===> PASSED: Test-FlowsAreInjectedOnIcmpTraffic"
         })
     }
-    function Test-FlowsAreInjectedOnTcpTraffic {
+    function Test-FlowsAreInjectedAndEvictedOnTcpTraffic {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
@@ -915,31 +915,11 @@ function Test-VRouterAgentIntegration {
                 -Name $Name `
                 -Session1 $Session `
                 -Session2 $Session `
-                -TestConfiguration $TestConfiguration `
-                -TestCommunication $false `
-                -TestFlowEviction $false
+                -TestConfiguration $TestConfiguration
         })
     }
 
-    function Test-TcpTrafficSingleNet {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-               [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
-
-        $Name = $MyInvocation.MyCommand.Name
-
-        $Job.StepQuiet($Name, {
-            Test-Tcp `
-                -Name $Name `
-                -Session1 $Session `
-                -Session2 $Session `
-                -TestConfiguration $TestConfiguration `
-                -Network2 $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
-        })
-    }
-
-    # Test-TcpTrafficMultipleNets doesn't actually connect (only flow is created)
-
-    function Test-MultihostTcpTrafficSingleNet {
+    function Test-MultihostTcpTraffic {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session1,
                [Parameter(Mandatory = $true)] [PSSessionT] $Session2,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
@@ -951,8 +931,7 @@ function Test-VRouterAgentIntegration {
                 -Name $Name `
                 -Session1 $Session1 `
                 -Session2 $Session2 `
-                -TestConfiguration $TestConfiguration `
-                -Network2 $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1
+                -TestConfiguration $TestConfiguration
          })
     }
 
@@ -1057,7 +1036,9 @@ function Test-VRouterAgentIntegration {
 
             if ($TestFlowEviction) {
                 Write-Host "======> Then: Flow should be removed"
-                Assert-SomeFlowsEvicted -Session $Session1 -Proto "tcp"
+                foreach ($Session in @($Session1, $Session2) | Get-Unique) {
+                    Assert-SomeFlowsEvicted -Session $Session1 -Proto "tcp"
+                }
             }
         }
 
@@ -1220,10 +1201,9 @@ function Test-VRouterAgentIntegration {
         Test-ICMPoMPLSoGRE -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-ICMPoMPLSoUDP -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnIcmpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
-        Test-FlowsAreInjectedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
+        Test-FlowsAreInjectedAndEvictedOnTcpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
         Test-FlowsAreInjectedOnUdpTraffic -Session $Session1 -TestConfiguration $TestConfiguration
-        Test-TcpTrafficSingleNet -Session $Session1 -TestConfiguration $TestConfiguration
-        Test-MultihostTcpTrafficSingleNet -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
+        Test-MultihostTcpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
         Test-MultihostUdpTraffic -Session1 $Session1 -Session2 $Session2 -TestConfiguration $TestConfiguration
     })
 
