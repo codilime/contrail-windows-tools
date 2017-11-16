@@ -106,6 +106,7 @@ function Test-IsVRouterExtensionEnabled {
 
     return $($Ext.Enabled -and $Ext.Running)
 }
+
 function Enable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
