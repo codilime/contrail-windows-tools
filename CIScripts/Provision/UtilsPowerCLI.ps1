@@ -123,10 +123,10 @@ function New-TestbedVMs {
         $Sessions.ForEach({ Copy-MsvcDebugDlls -Session $_ -MsvcDebugDllsDir $MsvcDebugDllsDir })
     }
 
-    Write-Host "Disabling firewall for Domain and Private networks"
+    Write-Host "Disabling firewall on spawned VMs"
     $Sessions.ForEach({
         Invoke-Command -Session $_ -ScriptBlock {
-            Set-NetFirewallProfile -Profile Domain,Private -Enabled False
+            Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
         }
     })
 
