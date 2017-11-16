@@ -20,12 +20,12 @@ stage('Preparation') {
         env.CONTROLLER_BRANCH = "windows3.1"
         env.THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
         env.DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
-        env.VS_SETUP_ENV_SCRIPT_PATH = "C:/Program Files (x86)/Microsoft Visual C++ Build Tools/vcbuildtools.bat"
         env.BUILD_IN_RELEASE_MODE = "true"
         env.SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
         env.CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
         env.CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
 
+        env.MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
         env.GOPATH = pwd()
 
         powershell script: './CIScripts/Build.ps1'
