@@ -66,6 +66,15 @@ function Test-VRouterAgentIntegration {
     # Private functions of Test-VRouterAgentIntegration
     #
 
+    function Get-ContainerIPAddress {
+        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+               [Parameter(Mandatory = $true)] [String] $ContainerName)
+
+        return Invoke-Command -Session $Session -ScriptBlock {
+            docker inspect -f '{{ range .NetworkSettings.Networks }}{{ .IPAddress }}{{ end }}' $Using:ContainerName
+        }
+    }
+
     function Get-TestbedIpAddressFromDns {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -531,9 +540,7 @@ function Test-VRouterAgentIntegration {
         if ($CreateContainer1Success -ne 0 -or $CreateContainer2Success -ne 0) {
             throw "Container creation failed. EXPECTED: succeeded."
         }
-        $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
-            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-        }
+        $Container2IP = Get-ContainerIPAddress -Session $Session2 -ContainerName $Container2Name
 
         Write-Host "======> Then ping between them succeeds"
         Write-Host "$Container1Name is going to ping $Container2Name (IP: $Container2IP)."
@@ -886,9 +893,7 @@ function Test-VRouterAgentIntegration {
                 throw "Container creation failed. EXPECTED: succeeded."
             }
 
-            $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
-                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-            }
+            $Container2IP = Get-ContainerIPAddress -Session $Session2 -ContainerName $Container2Name
 
             Write-Host "======> When: Container $Container1Name (network: $Network1Name)"
             Write-Host "        pings container $Container2Name (network: $Network2Name, IP: $Container2IP)"
@@ -987,9 +992,7 @@ function Test-VRouterAgentIntegration {
             throw "Container creation failed. EXPECTED: succeeded."
         }
 
-        $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
-            & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-        }
+        $Container2IP = Get-ContainerIPAddress -Session $Session2 -ContainerName $Container2Name
 
         Write-Host "======> When: Container $Container1Name (network: $($Network1.Name) is trying to"
         Write-Host "        open TCP connection to $Container2Name (network: $($Network2.Name), IP: $Container2IP)"
@@ -1082,9 +1085,7 @@ function Test-VRouterAgentIntegration {
                 throw "Container creation failed. EXPECTED: succeeded."
             }
 
-            $Container2IP = Invoke-Command -Session $Session -ScriptBlock {
-                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-            }
+            $Container2IP = Get-ContainerIPAddress -Session $Session -ContainerName $Container2Name
 
             Write-Host "======> When: Container $Container1Name (network: $Network1Name) is sending UDP"
             Write-Host "        packets to container $Container2Name (network: $Network2Name, IP: $Container2IP)"
@@ -1145,9 +1146,7 @@ function Test-VRouterAgentIntegration {
                 throw "Container creation failed. EXPECTED: succeeded."
             }
 
-            $Container2IP = Invoke-Command -Session $Session2 -ScriptBlock {
-                & docker exec $Using:Container2Name powershell -Command "(Get-NetAdapter | Select-Object -First 1 | Get-NetIPAddress).IPv4Address"
-            }
+            $Container2IP = Get-ContainerIPAddress -Session $Session2 -ContainerName $Container2Name
 
             Write-Host "======> When: Container $Container1Name (network: $Network1Name) is sending UDP"
             Write-Host "        packets to container $Container2Name (network: $Network2Name, IP: $Container2IP)"
