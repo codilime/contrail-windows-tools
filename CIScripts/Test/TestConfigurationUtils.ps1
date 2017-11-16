@@ -106,7 +106,6 @@ function Test-IsVRouterExtensionEnabled {
 
     return $($Ext.Enabled -and $Ext.Running)
 }
-
 function Enable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
@@ -119,6 +118,14 @@ function Enable-DockerDriver {
     $TenantName = $Configuration.TenantConfiguration.Name
 
     Invoke-Command -Session $Session -ScriptBlock {
+        Push-Location $Env:ProgramData/ContrailDockerDriver
+
+        if (Test-Path log.txt) {
+            Move-Item -Force log.txt log.old.txt
+        }
+
+        Pop-Location
+
         # Nested ScriptBlock variable passing workaround
         $AdapterName = $Using:AdapterName
         $ControllerIP = $Using:ControllerIP
@@ -133,7 +140,7 @@ function Enable-DockerDriver {
             $Env:OS_AUTH_URL = $Cfg.AuthUrl
             $Env:OS_TENANT_NAME = $Tenant
 
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>"
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" -forceAsInteractive -controllerIP $ControllerIP -adapter "$Adapter" -vswitchName "Layered <adapter>" -logLevel "Debug"
         } -ArgumentList $Configuration, $ControllerIP, $TenantName, $AdapterName | Out-Null
     }
 
