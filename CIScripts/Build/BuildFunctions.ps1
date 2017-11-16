@@ -80,7 +80,9 @@ function Set-MSISignature {
            [Parameter(Mandatory = $true)] [string] $MSIPath)
     $Job.Step("Signing MSI", {
         $cerp = Get-Content $CertPasswordFilePath
-        & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
+        DeferExcept({
+            & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
+        })
         if ($LASTEXITCODE -ne 0) {
             throw "Signing $MSIPath failed"
         }
