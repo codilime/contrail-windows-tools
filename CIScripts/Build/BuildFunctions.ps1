@@ -51,12 +51,6 @@ function Clone-Repos {
 function Prepare-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $VSSetupEnvScriptPath)
-    $Job.Step("Sourcing VS environment variables", {
-        DeferExcept({
-            Invoke-BatchFile "$VSSetupEnvScriptPath"
-        })
-    })
-
     $Job.Step("Copying common third-party dependencies", {
         New-Item -ItemType Directory .\third_party
         Get-ChildItem "$ThirdPartyCache\common" -Directory |
