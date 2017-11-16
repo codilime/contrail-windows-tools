@@ -119,13 +119,18 @@ function Enable-DockerDriver {
     $TenantName = $Configuration.TenantConfiguration.Name
 
     Invoke-Command -Session $Session -ScriptBlock {
-        Push-Location $Env:ProgramData/ContrailDockerDriver
 
-        if (Test-Path log.txt) {
-            Move-Item -Force log.txt log.old.txt
+        $LogDir = "$Env:ProgramData/ContrailDockerDriver"
+
+        if (Test-Path $LogDir) {
+            Push-Location $LogDir
+
+            if (Test-Path log.txt) {
+                Move-Item -Force log.txt log.old.txt
+            }
+
+            Pop-Location
         }
-
-        Pop-Location
 
         # Nested ScriptBlock variable passing workaround
         $AdapterName = $Using:AdapterName
