@@ -167,6 +167,7 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
 
     $Job.PushStep("Extension build")
@@ -181,7 +182,7 @@ function Invoke-ExtensionBuild {
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
         DeferExcept({
-            scons $BuildModeOption vrouter
+            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
         })
         if ($LASTEXITCODE -ne 0) {
             throw "Building vRouter solution failed"
@@ -234,7 +235,7 @@ function Invoke-AgentBuild {
 
     $Job.Step("Building API", {
         DeferExcept({
-            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist
+            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist | Tee-Object -FilePath $LogsDir/build_api.log
         })
         if ($LASTEXITCODE -ne 0) {
             throw "Building API failed"
@@ -278,7 +279,7 @@ function Invoke-AgentBuild {
         }
         $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" `
                                      -f "$BuildModeOption", "$TestsString"
-        Invoke-Expression $AgentAndTestsBuildCommand
+        Invoke-Expression $AgentAndTestsBuildCommand | Tee-Object -FilePath $LogsDir/build_agent_and_tests.log
 
         if ($LASTEXITCODE -ne 0) {
             throw "Building Agent and tests failed"

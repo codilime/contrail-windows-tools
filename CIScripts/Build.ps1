@@ -24,29 +24,34 @@ $IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
 $DockerDriverOutputDir = "output/docker_driver"
 $vRouterOutputDir = "output/vrouter"
 $AgentOutputDir = "output/agent"
+$LogsDir = "logs"
 
 New-Item -ItemType directory -Path $DockerDriverOutputDir
 New-Item -ItemType directory -Path $vRouterOutputDir
 New-Item -ItemType directory -Path $AgentOutputDir
+New-Item -ItemType directory -Path $LogsDir
 
 Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
                          -SigntoolPath $Env:SIGNTOOL_PATH `
                          -CertPath $Env:CERT_PATH `
                          -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
-                         -OutputPath $DockerDriverOutputDir
+                         -OutputPath $DockerDriverOutputDir `
+                         -LogsPath $LogsDir
 
 Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
                       -SigntoolPath $Env:SIGNTOOL_PATH `
                       -CertPath $Env:CERT_PATH `
                       -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
                       -ReleaseMode $IsReleaseMode `
-                      -OutputPath $vRouterOutputDir
+                      -OutputPath $vRouterOutputDir `
+                      -LogsPath $LogsDir
 
 Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
                   -SigntoolPath $Env:SIGNTOOL_PATH `
                   -CertPath $Env:CERT_PATH `
                   -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
                   -ReleaseMode $IsReleaseMode `
-                  -OutputPath $AgentOutputDir
+                  -OutputPath $AgentOutputDir `
+                  -LogsPath $LogsDir
 
 $Job.Done()
