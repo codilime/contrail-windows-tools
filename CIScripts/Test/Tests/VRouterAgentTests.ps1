@@ -9,7 +9,6 @@ function Wait-RemoteEvent {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $ContainerName,
            [Parameter(Mandatory = $true)] [String] $EventName,
-           [Parameter(Mandatory = $false)] [Int] $DelayMilliseconds = 300,
            [Parameter(Mandatory = $false)] [Int] $TimeoutSeconds = 60)
 
     Invoke-Command -Session $Session -ScriptBlock {
