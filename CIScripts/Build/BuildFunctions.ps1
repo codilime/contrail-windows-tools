@@ -281,7 +281,9 @@ function Invoke-AgentBuild {
         }
         $AgentAndTestsBuildCommand = "scons -j 4 {0} contrail-vrouter-agent.msi {1}" `
                                      -f "$BuildModeOption", "$TestsString"
-        Invoke-Expression $AgentAndTestsBuildCommand | Tee-Object -FilePath $LogsDir/build_agent_and_tests.log
+        DeferExcept({
+            Invoke-Expression $AgentAndTestsBuildCommand | Tee-Object -FilePath $LogsDir/build_agent_and_tests.log
+        })
 
         if ($LASTEXITCODE -ne 0) {
             throw "Building Agent and tests failed"
