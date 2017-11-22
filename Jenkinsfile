@@ -22,8 +22,8 @@ stage('Preparation') {
         env.DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
         env.BUILD_IN_RELEASE_MODE = "false"
         env.SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
-        env.CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/certs/codilime.com-selfsigned-cert.pfx"
-        env.CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/certs/certp.txt"
+        env.CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
+        env.CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
 
         env.MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
         env.GOPATH = pwd()
