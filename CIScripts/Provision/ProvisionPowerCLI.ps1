@@ -3,7 +3,7 @@
 . $PSScriptRoot\VIServer.ps1
 
 function Provision-PowerCLI {
-    Param ([Parameter(Mandatory = $true)] [int] $VMsNeeded,
+    Param ([Parameter(Mandatory = $true)] [System.Collections.ArrayList] $VMNames,
            [Parameter(Mandatory = $true)] [bool] $IsReleaseMode)
 
     $Job.PushStep("Provisioning using PowerCLI")
@@ -26,12 +26,6 @@ function Provision-PowerCLI {
     $DumpFilesLocation = $Env:DUMP_FILES_LOCATION
     $DumpFilesBaseName = ($Env:JOB_BASE_NAME + "_" + $Env:BUILD_NUMBER)
 
-    $VMBaseName = Get-SanitizedOrGeneratedVMName -VMName $Env:VM_NAME -RandomNamePrefix "Core-"
-    $VMNames = [System.Collections.ArrayList] @()
-    for ($i = 0; $i -lt $VMsNeeded; $i++) {
-        $VMNames += $VMBaseName + "-" + $i.ToString()
-    }
-
     Write-Host "Starting Testbeds:"
     $VMNames.ForEach({ Write-Host $_ })
 
@@ -53,7 +47,7 @@ function Provision-PowerCLI {
 
     $Job.PopStep()
 
-    return $Sessions, $VMNames
+    return $VMNames
 }
 
 function Teardown-PowerCLI {
