@@ -68,6 +68,7 @@ function Run-TestScenarios {
             ForwardingExtensionName = $Env:FORWARDING_EXTENSION_NAME;
             AgentConfigFilePath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf";
             DockerDriverConfiguration = $DockerDriverConfiguration;
+            LinuxVirtualMachineIp = $Env:LinuxVirtualMachineIp;
         }
 
         $SNATConfiguration = [SNATConfiguration] @{
