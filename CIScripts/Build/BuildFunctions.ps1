@@ -176,6 +176,7 @@ function Invoke-ExtensionBuild {
     $Job.Step("Copying Extension dependencies", {
         Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
         Copy-Item -Recurse third_party\cmocka vrouter\test\
+        Copy-Item -Recurse "$ThirdPartyCache\certs\*" "third_party\certs\"
     })
 
     $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
