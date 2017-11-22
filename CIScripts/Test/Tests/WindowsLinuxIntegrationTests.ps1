@@ -85,6 +85,10 @@ function Test-WindowsLinuxIntegration {
         $TestConfigurationWinLinux.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
         $TestConfigurationWinLinux.ControllerIP = $Env:CONTROLLER_IP_LINUX_WINDOWS
         $TestConfigurationWinLinux.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_LINUX_WINDOWS
+        if (!$TestConfigurationWinLinux.LinuxVirtualMachineIp) {
+            $TestConfigurationWinLinux.LinuxVirtualMachineIp = "10.0.0.9"
+            Write-Host "Using default linux server ip address: " $TestConfigurationWinLinux.LinuxVirtualMachineIp
+        }
 
         Test-IcmpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
         Test-TcpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
