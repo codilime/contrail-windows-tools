@@ -78,6 +78,11 @@ function Test-WindowsLinuxIntegration {
         })
     }
 
+    #TODO:Remove
+    $Env:CONTROLLER_IP_LINUX_WINDOWS="10.7.0.216"
+    $Env:DOCKER_DRIVER_AUTH_URL_LINUX_WINDOWS="http://10.7.0.216:5000/v2.0"
+    $TestConfiguration.LinuxVirtualMachineIp = "10.0.0.9"
+
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
@@ -85,10 +90,6 @@ function Test-WindowsLinuxIntegration {
         $TestConfigurationWinLinux.DockerDriverConfiguration = $TestConfiguration.DockerDriverConfiguration.ShallowCopy()
         $TestConfigurationWinLinux.ControllerIP = $Env:CONTROLLER_IP_LINUX_WINDOWS
         $TestConfigurationWinLinux.DockerDriverConfiguration.AuthUrl = $Env:DOCKER_DRIVER_AUTH_URL_LINUX_WINDOWS
-        if (!$TestConfigurationWinLinux.LinuxVirtualMachineIp) {
-            $TestConfigurationWinLinux.LinuxVirtualMachineIp = "10.0.0.9"
-            Write-Host "Using default linux server ip address: " $TestConfigurationWinLinux.LinuxVirtualMachineIp
-        }
 
         Test-IcmpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
         Test-TcpLinuxWindowsConnectivity -Session $Session -TestConfiguration $TestConfigurationWinLinux
