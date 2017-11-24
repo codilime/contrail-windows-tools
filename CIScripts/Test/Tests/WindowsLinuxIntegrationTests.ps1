@@ -78,11 +78,6 @@ function Test-WindowsLinuxIntegration {
         })
     }
 
-    #TODO:Remove
-    $Env:CONTROLLER_IP_LINUX_WINDOWS="10.7.0.216"
-    $Env:DOCKER_DRIVER_AUTH_URL_LINUX_WINDOWS="http://10.7.0.216:5000/v2.0"
-    $TestConfiguration.LinuxVirtualMachineIp = "10.0.0.9"
-
     $Job.StepQuiet($MyInvocation.MyCommand.Name, {
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
 
