@@ -1,0 +1,35 @@
+#!/bin/bash
+
+install_service () {
+    echo "Installing service: $1..."
+    if [ -f $1 ]; then
+        if ! cp --force $1 /etc/systemd/system; then
+            echo "Error: Could not copy file $1 to /etc/systemd/system."
+            exit 1
+        fi
+    else
+        echo "Error: File $1 does not exist."
+        exit 1
+    fi
+
+    systemctl enable $1
+    ret1=$?
+    systemctl start $1
+    ret2=$?
+    if [ $ret1 -ne 0 ] || [ $ret2 -ne 0 ]; then
+        echo "Error: Service $1 can not be enabled/started."
+        exit 1
+    fi
+}
+
+interface="$(ifconfig | grep "Link encap:Ethernet" | cut --delimiter=' ' --fields=1)"
+echo "Switching checksum offloading off for interface $interface..."
+if ethtool -K $interface rx off tx off; then
+    echo "Error: Couldn't switch chcecksum offloading off..."
+    exit 1
+fi
+
+install_service httpserver.service
+install_service udpecho.service
+echo "Done!"
+

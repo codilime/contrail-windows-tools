@@ -1,0 +1,14 @@
+[Unit]
+Description=Test UDP echo server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/udp_echo_server.py 0.0.0.0 9090
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+
