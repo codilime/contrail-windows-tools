@@ -15,8 +15,9 @@
 . $PSScriptRoot\Tests\SubnetsTests.ps1
 . $PSScriptRoot\Tests\Pkt0PipeImplementationTests.ps1
 . $PSScriptRoot\Tests\DockerDriverMultitenancyTest.ps1
+. $PSScriptRoot\Tests\WindowsLinuxIntegrationTests.ps1
 
-function Run-Tests {
+function Run-TestScenarios {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
     if(-not $Sessions) {
@@ -72,6 +73,7 @@ function Run-Tests {
             ForwardingExtensionName = $Env:FORWARDING_EXTENSION_NAME;
             AgentConfigFilePath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf";
             DockerDriverConfiguration = $DockerDriverConfiguration;
+            LinuxVirtualMachineIp = $Env:LINUX_VIRTUAL_MACHINE_IP;
         }
 
         $SNATConfiguration = [SNATConfiguration] @{
@@ -100,10 +102,52 @@ function Run-Tests {
         Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-DockerDriverMultiTenancy -Session $Sessions[0] -TestConfiguration $TestConfiguration
+        Test-WindowsLinuxIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-Pkt0PipeImplementation -Session $Sessions[0] -TestConfiguration $TestConfiguration
 
         if($Env:RUN_DRIVER_TESTS -eq "1") {
             Test-DockerDriver -Session $Sessions[0] -TestConfiguration $TestConfiguration
         }
     })
+}
+
+function Collect-Logs {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+
+    foreach ($Session in $Sessions) {
+        if ($Session.State -eq "Opened") {
+            Write-Host
+            Write-Host "Displaying logs from $($Session.ComputerName)"
+
+            Invoke-Command -Session $Session {
+                $LogPaths = @(
+                    "$Env:ProgramData/ContrailDockerDriver/log.txt",
+                    "$Env:ProgramData/ContrailDockerDriver/log.old.txt"
+                )
+
+                foreach ($Path in $LogPaths) {
+                    if (Test-Path $Path) {
+                        Write-Host
+                        Write-Host "Contents of ${Path}:"
+                        Get-Content $Path
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Run-Tests {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+
+    try {
+        Run-TestScenarios -Sessions $Sessions
+    }
+    catch {
+        Write-Host $_
+
+        Collect-Logs -Sessions $Sessions
+
+        throw
+    }
 }
