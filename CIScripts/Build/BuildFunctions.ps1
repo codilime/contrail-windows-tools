@@ -287,7 +287,7 @@ function Invoke-AgentBuild {
         }
     })
 
-    $rootBuildDir = "build\{0}" -f $BuildMode
+    $rootBuildDir = "build\$BuildMode"
 
     $Job.Step("Running tests", {
         $backupPath = $Env:Path
@@ -298,11 +298,20 @@ function Invoke-AgentBuild {
         $Env:TASK_UTIL_WAIT_TIME = 10000
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
-        $AgentTextExecutables = Get-ChildItem -Recurse $rootBuildDir | Where-Object {$_.Name -match '^[\W\w]*test[\W\w]*.exe$'}
-        $AgentTextExecutables += Get-ChildItem -Recurse $rootBuildDir | Where-Object {$_.Name -match '^ifmap_[\W\w]*.exe$'}
-        $AgentTextExecutables = $AgentTextExecutables | Select -Unique
+        $TestsFolders = @(
+            "base\test",
+            "dns\test",
+            "ksync\test",
+            "schema\test",
+            "vnsw\agent\cmn\test",
+            "vnsw\agent\oper\test",
+            "vnsw\agent\test",
+            "xml\test",
+            "xmpp\test"
+        ) | % { $rootBuildDir + $_ }
 
-        Foreach ($TestExecutable in $AgentTextExecutables) {
+        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
+        Foreach ($TestExecutable in $AgentExecutables) {
             $TestRes = Run-Test -TestExecutable $TestExecutable.FullName
             if ($TestRes -ne 0) {
                 throw "Running agent tests failed"
