@@ -186,6 +186,7 @@ function Invoke-ExtensionBuild {
     $Job.Step("Building Extension and Utils", {
         $BuildModeOption = "--optimization=" + $BuildMode
         DeferExcept({
+            $Env:cerp = Get-Content $CertPasswordFilePath
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
         })
         if ($LASTEXITCODE -ne 0) {
