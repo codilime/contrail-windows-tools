@@ -290,6 +290,7 @@ function Invoke-AgentBuild {
     $rootBuildDir = "build\{0}" -f $BuildMode
 
     $Job.Step("Running tests", {
+        $backupPath = $Env:Path
         $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
 
         # Those env vars are used by agent tests for determining timeout's threshold
@@ -307,6 +308,8 @@ function Invoke-AgentBuild {
                 throw "Running agent tests failed"
             }
         }
+
+        $Env:Path = $backupPath
     })
 
     $agentMSI = "$rootBuildDir\vnsw\agent\contrail\contrail-vrouter-agent.msi"
