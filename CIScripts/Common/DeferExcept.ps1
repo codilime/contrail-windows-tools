@@ -13,7 +13,7 @@ function DeferExcept([scriptblock] $block) {
     return Invoke-Command -ScriptBlock {
         & {
             $ErrorActionPreference = "Continue"
-            & sb
+            & $block
         }
 
         if($LASTEXITCODE -ne 0) {
