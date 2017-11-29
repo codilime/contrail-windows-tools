@@ -3,7 +3,11 @@ stage('Preparation') {
         deleteDir()
         git branch: 'jfbuild', url: 'https://github.com/codilime/contrail-windows-tools/'
         stash name: "CIScripts", includes: "CIScripts/**"
+    }
+}
 
+stage('Build') {
+    node('builder') {
         env.DRIVER_REPO_URL = "https://github.com/codilime/contrail-windows-docker"
         env.DRIVER_BRANCH = "master"
         env.TOOLS_REPO_URL = "https://github.com/codilime/contrail-build"
@@ -30,43 +34,50 @@ stage('Preparation') {
 
         powershell script: './CIScripts/Build.ps1'
         stash name: "WinArt", includes: "output/**/*"
+        stash name: "buildLogs", includes: "logs/**"
     }
 }
 
 def SpawnedTestbedVMNames = ''
 
 stage('Provision') {
-    node('master') {
+    node('ansible') {
         sh 'echo "Tu będzie ansible"'
         // set $SpawnedTestbedVMNames here
     }
 }
+
 stage('Deploy') {
     node('tester') {
         deleteDir()
         unstash "CIScripts"
-        //unstash "WinArt"
+        // unstash "WinArt"
 
         env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
         env.ARTIFACTS_DIR = "output"
 
-        powershell script: './CIScripts//Deploy.ps1'
+        // powershell script: './CIScripts//Deploy.ps1'
     }
 }
+
 stage('Test') {
     node('tester') {
         deleteDir()
         unstash "CIScripts"
 
-        env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
-        env.ARTIFACTS_DIR = "output"
+        // env.TESTBED_HOSTNAMES = SpawnedTestbedVMNames
+        // env.ARTIFACTS_DIR = "output"
 
-        powershell script: './CIScripts/Test.ps1'
+        // powershell script: './CIScripts/Test.ps1'
     }
 }
-stage('Cleanup') {
+
+stage('Post-build') {
     node('master') {
+        // cleanWs()
         sh 'echo "Tu będzie cleanup środowiska"'
-        cleanWs()
+        // unstash "buildLogs"
+        sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
+        // cleanWS{}
     }
 }
