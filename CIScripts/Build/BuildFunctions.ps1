@@ -308,7 +308,7 @@ function Invoke-AgentBuild {
             "vnsw\agent\test",
             "xml\test",
             "xmpp\test"
-        ) | % { $rootBuildDir + $_ }
+        ) | % { "$rootBuildDir\$_" }
 
         $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
         Foreach ($TestExecutable in $AgentExecutables) {
