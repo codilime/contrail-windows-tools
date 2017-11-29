@@ -1,0 +1,14 @@
+[Unit]
+Description=Test HTTP server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/usr/bin/python3 -m http.server 8080
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+
