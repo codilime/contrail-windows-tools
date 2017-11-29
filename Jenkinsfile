@@ -24,6 +24,7 @@ stage('Build') {
         env.CONTROLLER_BRANCH = "windows3.1"
         env.THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
         env.DRIVER_SRC_PATH = "github.com/codilime/contrail-windows-docker"
+        env.BUILD_ONLY = "1"
         env.BUILD_IN_RELEASE_MODE = "false"
         env.SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
         env.CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
