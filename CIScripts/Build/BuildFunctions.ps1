@@ -260,7 +260,6 @@ function Invoke-AgentBuild {
             "controller/src/xmpp:test",
             "agent:test_oper_xml",
             "agent:ifmap_dependency_manager_test",
-            "agent:test_xmpp_discovery_non_hv",
             "src/base:libtask_test",
             "src/base:bitset_test",
             "src/base:index_allocator_test",
