@@ -26,3 +26,15 @@ function New-RemoteSessions {
 
     return $Sessions
 }
+
+function New-RemoteSessionsToTestbeds {
+    if(-not $Env:TESTBED_HOSTNAMES) {
+        throw "Cannot create remote sessions to testbeds: $Env:TESTBED_HOSTNAMES not set"
+    }
+
+    # TODO: get IPs from Env
+    $Creds = Get-VMCreds
+
+    $Testbeds = $Env:TESTBED_HOSTNAMES.Split(",")
+    return New-RemoteSessions -VMNames $Testbeds -Credentials $Creds
+}
