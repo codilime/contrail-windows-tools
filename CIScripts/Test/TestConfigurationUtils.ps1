@@ -74,7 +74,7 @@ function Enable-VRouterExtension {
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName,
            [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet")
 
-    Write-Output "Enabling Extension"
+    Write-Host "Enabling Extension"
 
     Invoke-Command -Session $Session -ScriptBlock {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
@@ -88,7 +88,7 @@ function Disable-VRouterExtension {
            [Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
 
-    Write-Output "Disabling Extension"
+    Write-Host "Disabling Extension"
 
     Invoke-Command -Session $Session -ScriptBlock {
         Disable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
@@ -115,7 +115,7 @@ function Enable-DockerDriver {
            [Parameter(Mandatory = $true)] [DockerDriverConfiguration] $Configuration,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
-    Write-Output "Enabling Docker Driver"
+    Write-Host "Enabling Docker Driver"
 
     $TenantName = $Configuration.TenantConfiguration.Name
 
@@ -157,7 +157,7 @@ function Enable-DockerDriver {
 function Disable-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Output "Disabling Docker Driver"
+    Write-Host "Disabling Docker Driver"
 
     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
 
@@ -313,7 +313,7 @@ function New-DockerNetwork {
 function Remove-AllUnusedDockerNetworks {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Output "Removing all docker networks"
+    Write-Host "Removing all docker networks"
 
     Invoke-Command -Session $Session -ScriptBlock {
         docker network prune --force | Out-Null
@@ -325,7 +325,7 @@ function Initialize-TestConfiguration {
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration,
            [Parameter(Mandatory = $false)] [bool] $NoNetwork = $false)
 
-    Write-Output "Initializing Test Configuration"
+    Write-Host "Initializing Test Configuration"
 
     # DockerDriver automatically enables Extension, so there is no need to enable it manually
     Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
@@ -358,7 +358,7 @@ function Clear-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-    Write-Output "Cleaning up test configuration"
+    Write-Host "Cleaning up test configuration"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session

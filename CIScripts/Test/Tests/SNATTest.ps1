@@ -21,7 +21,7 @@ function Test-SNAT {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName)
 
-        Write-Output "Creating MGMT switch..."
+        Write-Host "Creating MGMT switch..."
         $OldSwitches = Invoke-Command -Session $Session -ScriptBlock {
             return Get-VMSwitch -Name $Using:MgmtSwitchName -ErrorAction SilentlyContinue
         }
@@ -33,20 +33,20 @@ function Test-SNAT {
             New-VMSwitch -Name $Using:MgmtSwitchName -SwitchType Internal | Out-Null
         }
 
-        Write-Output "Creating MGMT switch... DONE"
+        Write-Host "Creating MGMT switch... DONE"
     }
 
     function Remove-MgmtSwitch {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $MgmtSwitchName)
 
-        Write-Output "Removing MGMT switch..."
+        Write-Host "Removing MGMT switch..."
 
         Invoke-Command -Session $Session -ScriptBlock {
             return Remove-VMSwitch -Name $Using:MgmtSwitchName -Force
         }
 
-        Write-Output "Removing MGMT switch... DONE"
+        Write-Host "Removing MGMT switch... DONE"
     }
 
     function New-RoutingInterface {
@@ -55,7 +55,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $Name,
                [Parameter(Mandatory = $true)] [ipaddress] $IPAddress)
 
-        Write-Output "Setting up veth for forwarding..."
+        Write-Host "Setting up veth for forwarding..."
         $SNATVeth = Invoke-Command -Session $Session -ScriptBlock {
             Add-VMNetworkAdapter -ManagementOS -SwitchName $Using:SwitchName -Name $Using:Name | Out-Null
 
@@ -75,7 +75,7 @@ function Test-SNAT {
             }
         }
 
-        Write-Output "Setting up veth for forwarding... DONE"
+        Write-Host "Setting up veth for forwarding... DONE"
 
         return $SNATVeth
     }
@@ -84,7 +84,7 @@ function Test-SNAT {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $Name)
 
-        Write-Output "Removing routing interface..."
+        Write-Host "Removing routing interface..."
 
         Invoke-Command -Session $Session -ScriptBlock {
             $NetAdapter = Get-NetAdapter | Where-Object Name -Match $Using:Name
@@ -93,7 +93,7 @@ function Test-SNAT {
             Remove-VMNetworkAdapter -ManagementOS -Name $Using:Name
         }
 
-        Write-Output "Removing routing interface... DONE"
+        Write-Host "Removing routing interface... DONE"
     }
 
     function New-SNATVM {
@@ -108,7 +108,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $GUID)
 
         # TODO: Remove `forwarding-mac` when Agent is functional
-        Write-Output "Run vrouter_hyperv.py to provision SNAT VM..."
+        Write-Host "Run vrouter_hyperv.py to provision SNAT VM..."
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
             $Res = Invoke-Command -ScriptBlock {
@@ -136,7 +136,7 @@ function Test-SNAT {
             throw "Run vrouter_hyperv.py to provision SNAT VM... FAILED"
         }
 
-        Write-Output "Run vrouter_hyperv.py to provision SNAT VM... DONE"
+        Write-Host "Run vrouter_hyperv.py to provision SNAT VM... DONE"
     }
 
     function Remove-SNATVM {
@@ -144,7 +144,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $DiskPath,
                [Parameter(Mandatory = $true)] [string] $GUID)
 
-        Write-Output "Run vrouter_hyperv.py to remove SNAT VM..."
+        Write-Host "Run vrouter_hyperv.py to remove SNAT VM..."
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             python "C:\Program Files\Juniper Networks\Agent\vrouter_hyperv.py" destroy `
                 --vhd_path $Using:DiskPath `
@@ -159,7 +159,7 @@ function Test-SNAT {
             throw "Run vrouter_hyperv.py to remove SNAT VM... FAILED"
         }
 
-        Write-Output "Run vrouter_hyperv.py to remove SNAT VM... DONE"
+        Write-Host "Run vrouter_hyperv.py to remove SNAT VM... DONE"
     }
 
     function Set-EndhostConfiguration {
@@ -170,7 +170,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $EndhostUsername,
                [Parameter(Mandatory = $true)] [string] $EndhostPassword)
 
-        Write-Output "Configure endhost..."
+        Write-Host "Configure endhost..."
 
         $EndhostSecurePassword = ConvertTo-SecureString $EndhostPassword -AsPlainText -Force
         $EndhostCredentials = New-Object System.Management.Automation.PSCredential($EndhostUsername, $EndhostSecurePassword)
@@ -180,7 +180,7 @@ function Test-SNAT {
                 -Command "echo $Using:EndhostPassword | sudo -S arp -i eth0 -s $Using:GatewayIP $Using:PhysicalMac" | Out-Null
         }
 
-        Write-Output "Configure endhost... DONE"
+        Write-Host "Configure endhost... DONE"
     }
 
     function Set-VRouterConfiguration {
@@ -192,7 +192,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [VMNetAdapterInformation] $SNATRight,
                [Parameter(Mandatory = $true)] $SNATVeth)
 
-        Write-Output "Configure vRouter..."
+        Write-Host "Configure vRouter..."
 
         $InternalVrf = 1
         $ExternalVrf = 2
@@ -212,50 +212,50 @@ function Test-SNAT {
         $BroadcastInternalNh = 110
         $BroadcastExternalNh = 111
 
-        Write-Output "Proceeding to configure adapters"
+        Write-Host "Proceeding to configure adapters"
 
         Invoke-Command -Session $Session -ScriptBlock {
             # Register physical adapter in Contrail
-            Write-Output "Configuring physical and vHost adapters"
+            Write-Host "Configuring physical and vHost adapters"
             vif --add $Using:PhysicalAdapter.IfName --mac $Using:PhysicalAdapter.MacAddress --vrf 0 --type physical
             vif --add $Using:VHostAdapter.IfName --mac $Using:VHostAdapter.MacAddress --vrf 0 --type vhost --xconnect $Using:PhysicalAdapter.IfName
 
             # Register container's NIC as vif
-            Write-Output "Configuring NIC adapter"
+            Write-Host "Configuring NIC adapter"
             vif --add $Using:ContainerAdapter.IfName --mac $Using:ContainerAdapter.MacAddress --vrf $Using:InternalVrf --type virtual
             nh --create $Using:ContainerNh --vrf $Using:InternalVrf --type 2 --el2 --oif $Using:ContainerAdapter.ifIndex
             rt -c -v $Using:InternalVrf -f 1 -e $Using:ContainerAdapter.MacAddress -n $Using:ContainerNh
 
             # Register SNAT's left adapter ("int")
-            Write-Output "Configuring int adapter"
+            Write-Host "Configuring int adapter"
             vif --add "int" --mac $Using:SNATLeft.MacAddress --vrf $Using:InternalVrf --type virtual --guid $Using:SNatLeft.GUID --vif $Using:SNATLeftVif
             nh --create $Using:SNATLeftNh --vrf $Using:InternalVrf --type 2 --el2 --oif $Using:SNATLeftVif
             rt -c -v $Using:InternalVrf -f 1 -e $Using:SNATLeft.MacAddress -n $Using:SNATLeftNh
 
             # Register SNAT's right adapter ("gw")
-            Write-Output "Configuring gw adapter"
+            Write-Host "Configuring gw adapter"
             vif --add "gw" --mac $Using:SNATRight.MacAddress --vrf $Using:ExternalVrf --type virtual --guid $Using:SNATRight.GUID --vif $Using:SNATRightVif
             nh --create $Using:SNATRightNh --vrf $Using:ExternalVrf --type 2 --el2 --oif $Using:SNATRightVif
             rt -c -v $Using:ExternalVrf -f 1 -e $Using:SNATRight.MacAddress -n $Using:SNATRightNh
 
             # Register SNAT's additional adapter ("veth")
-            Write-Output "Configuring veth adapter"
+            Write-Host "Configuring veth adapter"
             vif --add $Using:SNATVeth.ifName --mac $Using:SNATVeth.MacAddress --vrf $Using:ExternalVrf --type virtual
             nh --create $Using:SNATVethNh --vrf $Using:ExternalVrf --type 2 --el2 --oif $Using:SNATVeth.ifIndex
             rt -c -v $Using:ExternalVrf -f 1 -e $Using:SNATVeth.MacAddress -n $Using:SNATVethNh
 
             # Broadcast NH (internal network)
-            Write-Output "Configuring broadcast (internal)"
+            Write-Host "Configuring broadcast (internal)"
             nh --create $Using:BroadcastInternalNh --vrf $Using:InternalVrf --type 6 --cen --cni $Using:ContainerNH --cni $Using:SNATLeftNh
             rt -c -v $Using:InternalVrf -f 1 -e ff:ff:ff:ff:ff:ff -n $Using:BroadcastInternalNh
 
             # Broadcast NH (external network)
-            Write-Output "Configuring broadcast (external)"
+            Write-Host "Configuring broadcast (external)"
             nh --create $Using:BroadcastExternalNh --vrf $Using:ExternalVrf --type 6 --cen --cni $Using:SNATRightNh --cni $Using:SNATVethNh
             rt -c -v $Using:ExternalVrf -f 1 -e ff:ff:ff:ff:ff:ff -n $Using:BroadcastExternalNh
         }
 
-        Write-Output "Configure vRouter... DONE"
+        Write-Host "Configure vRouter... DONE"
     }
 
     function Set-RoutingRules {
@@ -264,7 +264,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $VethIP,
                [Parameter(Mandatory = $true)] [int] $SNATVethIfIndex)
 
-        Write-Output "Setting up routing rules..."
+        Write-Host "Setting up routing rules..."
 
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             route add $Using:GatewayIP mask 255.255.255.255 $Using:VethIP "if" $Using:SNATVethIfIndex | Out-Null
@@ -275,7 +275,7 @@ function Test-SNAT {
             throw "Setting up routing rules... FAILED"
         }
 
-        Write-Output "Setting up routing rules... DONE"
+        Write-Host "Setting up routing rules... DONE"
     }
 
     function Set-GWVethForwarding {
@@ -284,7 +284,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $GatewayIP,
                [Parameter(Mandatory = $true)] [string] $SNATRightMacAddressWindows)
 
-        Write-Output "Setting up ARP rule for GW-veth forwarding..."
+        Write-Host "Setting up ARP rule for GW-veth forwarding..."
 
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             netsh interface ipv4 add neighbor $Using:SNATVethIfIndex $Using:GatewayIP $Using:SNATRightMacAddressWindows | Out-Null
@@ -295,14 +295,14 @@ function Test-SNAT {
             throw "Setting up ARP rule for GW-veth forwarding... FAILED"
         }
 
-        Write-Output "Setting up ARP rule for GW-veth forwarding... DONE"
+        Write-Host "Setting up ARP rule for GW-veth forwarding... DONE"
     }
 
     function Set-HNSTransparentForwarding {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [int] $HNSAdapterIfIndex)
 
-        Write-Output "Enable forwarding on the HNSTransparent adapter..."
+        Write-Host "Enable forwarding on the HNSTransparent adapter..."
 
         $Res = Invoke-Command -Session $Session -ScriptBlock {
             netsh interface ipv4 set interface $Using:HNSAdapterIfIndex forwarding="enabled" | Out-Null
@@ -313,14 +313,14 @@ function Test-SNAT {
             throw "Enable forwarding on the HNSTransparent adapter... FAILED"
         }
 
-        Write-Output "Enable forwarding on the HNSTransparent adapter... DONE"
+        Write-Host "Enable forwarding on the HNSTransparent adapter... DONE"
     }
 
     function Test-VMAShouldBeCleanedUp {
         Param ([Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $Session,
                [Parameter(Mandatory = $true)] [string] $VmName)
 
-        Write-Output "Checking if VM was cleaned up..."
+        Write-Host "Checking if VM was cleaned up..."
         $VM = Invoke-Command -Session $Session -ScriptBlock {
             return Get-VM $Using:VmName -ErrorAction SilentlyContinue
         }
@@ -329,7 +329,7 @@ function Test-SNAT {
             throw "===> SNAT VM was not properly cleaned up! Test FAILED"
         }
 
-        Write-Output "===> SNAV VM was properly cleaned up! Test succeeded"
+        Write-Host "===> SNAV VM was properly cleaned up! Test succeeded"
     }
 
     function Test-VHDXShouldBeCleanedUp {
@@ -337,7 +337,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $DiskDir,
                [Parameter(Mandatory = $true)] [string] $GUID)
 
-        Write-Output "Checking if VHDX was cleaned up..."
+        Write-Host "Checking if VHDX was cleaned up..."
         $VM = Invoke-Command -Session $Session -ScriptBlock {
             return Get-ChildItem $Using:DiskDir\*$Using:GUID*
         }
@@ -346,7 +346,7 @@ function Test-SNAT {
             throw "===> SNAT VHDX was not properly cleaned up! Test FAILED"
         }
 
-        Write-Output "===> SNAT VHDX was properly cleaned up! Test succeeded"
+        Write-Host "===> SNAT VHDX was properly cleaned up! Test succeeded"
     }
 
     function Test-CanPingEndhostFromContainer {
@@ -355,7 +355,7 @@ function Test-SNAT {
                [Parameter(Mandatory = $true)] [string] $EndhostIP)
 
         $Res = Invoke-Command -Session $Session -ScriptBlock {
-            docker exec $Using:ContainerID ping $Using:EndhostIP | Write-Output
+            docker exec $Using:ContainerID ping $Using:EndhostIP | Write-Host
             $LASTEXITCODE
         }
         if ($Res -ne 0) {

@@ -7,52 +7,52 @@
 function Initialize-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $PhysicalIfName,
            [Parameter(Mandatory = $true)] [string] $NetworkName)
-    Write-Output -NoNewline "Checking if docker network '$NetworkName' exists... "
+    Write-Host -NoNewline "Checking if docker network '$NetworkName' exists... "
     $NotExists = Invoke-Command -ScriptBlock {
         docker network inspect $NetworkName 2>&1 | Out-Null
         $LASTEXITCODE
     }
     if ($NotExists -eq 0) {
-        Write-Output "Yes."
+        Write-Host "Yes."
     } else {
-        Write-Output "No."
-        Write-Output -NoNewline $("Creating docker network '$NetworkName' on " +`
+        Write-Host "No."
+        Write-Host -NoNewline $("Creating docker network '$NetworkName' on " +`
             "network interface '$PhysicalIfName'...")
         docker network create -d transparent `
             -o com.docker.network.windowsshim.interface=$PhysicalIfName `
             $NetworkName 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Output "Failed."
+            Write-Host "Failed."
             throw "Without docker network further efforts are pointless!"
         } else {
-            Write-Output "Done."
+            Write-Host "Done."
         }
     }
 }
 
 function Get-MacOfContainer {
     Param ([Parameter(Mandatory = $true)] [string] $ContainerName)
-    Write-Output -NoNewline "Reading MAC address of '$ContainerName'... "
+    Write-Host -NoNewline "Reading MAC address of '$ContainerName'... "
     $Mac = docker exec $ContainerName powershell -Command {
         (Get-NetAdapter | Select-Object -First 1).MacAddress
     }
-    Write-Output $Mac
+    Write-Host $Mac
     return $Mac
 }
 
 function Get-FriendlyNameOfContainer {
     Param ([Parameter(Mandatory = $true)] [string] $ContainerName)
-    Write-Output -NoNewline "Reading interface name of '$ContainerName'... "
+    Write-Host -NoNewline "Reading interface name of '$ContainerName'... "
     $Name = docker exec $ContainerName powershell -Command {
         (Get-NetAdapter | Select-Object -First 1).Name
     }
-    Write-Output "$Name"
+    Write-Host "$Name"
     if ($Name -match "\S+\s\((?<FriendlyName>[\S\s]+)\)") {
         $FriendlyName = $matches.FriendlyName
-        Write-Output "    Friendly name of the interface is: $FriendlyName"
+        Write-Host "    Friendly name of the interface is: $FriendlyName"
         return $FriendlyName
     } else {
-        Write-Output "    Could not fetch friendly name of the interface."
+        Write-Host "    Could not fetch friendly name of the interface."
         return ""
     }
 }
@@ -79,24 +79,24 @@ function Initialize-ContainerInterface {
 function Initialize-ContainerInterfaces {
     Param ([Parameter(Mandatory = $true)] [string] $Mac1,
            [Parameter(Mandatory = $true)] [string] $Mac2)
-    Write-Output "Initializing network interfaces for containers... "
-    Write-Output -NoNewline "Setting up network interface for '$Env:Container1Name'... "
+    Write-Host "Initializing network interfaces for containers... "
+    Write-Host -NoNewline "Setting up network interface for '$Env:Container1Name'... "
     $Res = Initialize-ContainerInterface -ContainerName $Env:Container1Name `
         -ContainerIP $Env:Container1IP -PrefixLength $Env:ContainerIPPrefixLength `
         -TheOtherMac $Mac2 -TheOtherIP $Env:Container2IP
     if ($Res -eq $true) {
-        Write-Output "Done."
+        Write-Host "Done."
     } else {
-        Write-Output "Failed."
+        Write-Host "Failed."
     }
-    Write-Output -NoNewline "Setting up network interface for '$Env:Container2Name'... "
+    Write-Host -NoNewline "Setting up network interface for '$Env:Container2Name'... "
     $Res = Initialize-ContainerInterface -ContainerName $Env:Container2Name `
         -ContainerIP $Env:Container2IP -PrefixLength $Env:ContainerIPPrefixLength `
         -TheOtherMac $Mac1 -TheOtherIP $Env:Container1IP
     if ($Res -eq $true) {
-        Write-Output "Done."
+        Write-Host "Done."
     } else {
-        Write-Output "Failed."
+        Write-Host "Failed."
     }
 }
 
@@ -104,14 +104,14 @@ function Initialize-Container {
     Param ([Parameter(Mandatory = $true)] [string] $ContainerName,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $true)] [string] $IPAddress)
-    Write-Output -NoNewline "Checking if container '$ContainerName' exists... "
+    Write-Host -NoNewline "Checking if container '$ContainerName' exists... "
     $NotExists = Invoke-Command -ScriptBlock {
         docker inspect $ContainerName 2>&1 | Out-Null
         $LASTEXITCODE
     }
     if ($NotExists -ne 0) {
-        Write-Output "No."
-        Write-Output -NoNewline $("Creating containter '$ContainerName' " +`
+        Write-Host "No."
+        Write-Host -NoNewline $("Creating containter '$ContainerName' " +`
             "in network '$NetworkName'... ")
         $Res = Invoke-Command -ScriptBlock {
             docker run -i --rm -d --net $NetworkName --name $ContainerName `
@@ -119,12 +119,12 @@ function Initialize-Container {
             $LASTEXITCODE
         }
         if ($Res -ne 0) {
-            Write-Output "Failed."
+            Write-Host "Failed."
         } else {
-            Write-Output "Done."
+            Write-Host "Done."
         }
     } else {
-        Write-Output "Yes."
+        Write-Host "Yes."
     }
 }
 
@@ -139,38 +139,38 @@ function Test-IsVRouterExtensionEnabled {
 
 function Remove-Container {
     Param ([Parameter(Mandatory = $true)] [string] $ContainerName)
-    Write-Output -NoNewline "Removing container '$ContainerName'... "
+    Write-Host -NoNewline "Removing container '$ContainerName'... "
     docker stop $ContainerName 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Output "Failed."
+        Write-Host "Failed."
     } else {
-        Write-Output "Done."
+        Write-Host "Done."
     }
 }
 
 function Remove-DockerNetwork {
     Param ([Parameter(Mandatory = $true)] [string] $NetworkName)
-    Write-Output -NoNewline "Removing docker network '$NetworkName'... "
+    Write-Host -NoNewline "Removing docker network '$NetworkName'... "
     docker network rm $NetworkName 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Output "Failed."
+        Write-Host "Failed."
     } else {
-        Write-Output "Done."
+        Write-Host "Done."
     }
 }
 
 function Enable-VRouterExtension {
     Param ([Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
-    Write-Output -NoNewline "Enabling vRouter Extension... "
+    Write-Host -NoNewline "Enabling vRouter Extension... "
     Get-VMSwitchExtension -VMSwitchName $VMSwitchName `
         -Name $ForwardingExtensionName | Enable-VMSwitchExtension | Out-Null
     $Res = Test-IsVRouterExtensionEnabled -VMSwitchName $VMSwitchName `
         -ForwardingExtensionName $ForwardingExtensionName
     if ($Res -eq $true) {
-        Write-Output "Done."
+        Write-Host "Done."
     } else {
-        Write-Output "Failed."
+        Write-Host "Failed."
         throw "Without vRouter Extension further efforts are pointless!"
     }
 }
@@ -178,13 +178,13 @@ function Enable-VRouterExtension {
 function Disable-VRouterExtension {
     Param ([Parameter(Mandatory = $true)] [string] $VMSwitchName,
            [Parameter(Mandatory = $true)] [string] $ForwardingExtensionName)
-    Write-Output -NoNewline "Disabling vRouter Extension... "
+    Write-Host -NoNewline "Disabling vRouter Extension... "
     $Disabled = Get-VMSwitchExtension -VMSwitchName $VMSwitchName `
         -Name $ForwardingExtensionName | Disable-VMSwitchExtension
     if ($Disabled -eq $false) {
-        Write-Output "Failed."
+        Write-Host "Failed."
     } else {
-        Write-Output "Done."
+        Write-Host "Done."
     }
 }
 
@@ -196,13 +196,13 @@ function Initialize-ForwardingRules {
            [Parameter(Mandatory = $true)] [string] $Mac2,
            [Parameter(Mandatory = $true)] [string] $Container1IfName,
            [Parameter(Mandatory = $true)] [string] $Container2IfName)
-    Write-Output "Initializing forwarding rules..."
+    Write-Host "Initializing forwarding rules..."
     $MacPhysicalUnixFormat = $MacPhysical -Replace "-", ":"
     $MacHNSTransparentUnixFormat = $MacHNSTransparent -Replace "-", ":"
     $Mac1UnixFormat = $Mac1 -Replace "-", ":"
     $Mac2UnixFormat = $Mac2 -Replace "-", ":"
 
-    Write-Output -NoNewline "Setting up vifs... "
+    Write-Host -NoNewline "Setting up vifs... "
     $VifsSetUp = $true
     vif --add (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").IfName --mac $MacPhysicalUnixFormat --vrf 0 --type physical
     if ($LASTEXITCODE -ne 0) {
@@ -221,12 +221,12 @@ function Initialize-ForwardingRules {
         $VifsSetUp = $false
     }
     if($VifsSetUp -eq $true) {
-        Write-Output "Done."
+        Write-Host "Done."
     } else {
-        Write-Output "Failed."
+        Write-Host "Failed."
     }
 
-    Write-Output -NoNewline "Setting up next hops..."
+    Write-Host -NoNewline "Setting up next hops..."
     $NHsSetUp = $true
     nh --create 1 --vrf 1 --type 2 --el2 --oif 1111
     if ($LASTEXITCODE -ne 0) {
@@ -237,12 +237,12 @@ function Initialize-ForwardingRules {
         $NHsSetUp = $false
     }
     if($NHsSetUp -eq $true) {
-        Write-Output "Done."
+        Write-Host "Done."
     } else {
-        Write-Output "Failed."
+        Write-Host "Failed."
     }
 
-    Write-Output -NoNewline "Setting up routes..."
+    Write-Host -NoNewline "Setting up routes..."
     $RTsSetUp = $true
     rt -c -v 1 -f 1 -e $Mac1UnixFormat -n 1
     if ($LASTEXITCODE -ne 0) {
@@ -253,9 +253,9 @@ function Initialize-ForwardingRules {
         $RTsSetUp = $false
     }
     if($RTsSetUp -eq $true) {
-        Write-Output "Done."
+        Write-Host "Done."
     } else {
-        Write-Output "Failed."
+        Write-Host "Failed."
     }
 }
 
@@ -281,7 +281,7 @@ function Stop-Agent {
 # Container1Name, Container2Name, Container1IP, Container2IP,
 # VRouterPhysicalIfName, DockerNetworkName, ContainerIPPrefixLength.
 function Initialize-SimpleEnvironment {
-    Write-Output "Initializing simple test environment..."
+    Write-Host "Initializing simple test environment..."
 
     Initialize-DockerNetwork -PhysicalIfName $Env:VRouterPhysicalIfName `
         -NetworkName $Env:DockerNetworkName
@@ -299,15 +299,15 @@ function Initialize-SimpleEnvironment {
     $MacPhysical = (Get-NetAdapter -Name "$Env:VRouterPhysicalIfName").MacAddress
     $MacHNSTransparent = (Get-NetAdapter -Name "vEthernet (HNSTransparent)").MacAddress
 
-    Write-Output -NoNewline "Checking if vRouter Extension is enabled... "
+    Write-Host -NoNewline "Checking if vRouter Extension is enabled... "
     $Res = Test-IsVRouterExtensionEnabled -VMSwitchName $Env:VMSwitchName `
         -ForwardingExtensionName $Env:ForwardingExtensionName
     if ($Res -ne $true) {
-        Write-Output "No."
+        Write-Host "No."
         Enable-VRouterExtension -VMSwitchName $Env:VMSwitchName `
             -ForwardingExtensionName $Env:ForwardingExtensionName
     } else {
-        Write-Output "Yes."
+        Write-Host "Yes."
     }
 
     Initialize-ForwardingRules -MacPhysical $MacPhysical -MacHNSTransparent $MacHNSTransparent -Mac1 $Mac1 -Mac2 $Mac2 -Container1IfName $Container1IfName -Container2IfName $Container2IfName
@@ -317,7 +317,7 @@ function Initialize-SimpleEnvironment {
 # Relies on environment variables (indirectly) - see
 # Remove-DockerNetworkAccordingToEnv.
 function Remove-SimpleEnvironment {
-    Write-Output "Removing simple test environment..."
+    Write-Host "Removing simple test environment..."
     Stop-Agent
     Remove-DockerNetworkAccordingToEnv
 }
