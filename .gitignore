@@ -1,11 +1,11 @@
-### QtCreator build directories and user config files ##
+# QtCreator build directories and user config files
 build-*/
 *.qbs.user
 
 ### Vagrant ###
 .vagrant/
 
-### DSC ###
+##### DSC #####
 CIScripts/JenkinsTesterDSC/JenkinsTester
 
 ### temp files ###

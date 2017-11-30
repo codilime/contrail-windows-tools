@@ -31,6 +31,8 @@ if($IsTriggeredByGerrit) {
 
 Prepare-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
+$IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
+
 $DockerDriverOutputDir = "output/docker_driver"
 $vRouterOutputDir = "output/vrouter"
 $AgentOutputDir = "output/agent"
@@ -40,8 +42,6 @@ New-Item -ItemType directory -Path $DockerDriverOutputDir
 New-Item -ItemType directory -Path $vRouterOutputDir
 New-Item -ItemType directory -Path $AgentOutputDir
 New-Item -ItemType directory -Path $LogsDir
-
-$IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
 
 Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
                          -SigntoolPath $Env:SIGNTOOL_PATH `

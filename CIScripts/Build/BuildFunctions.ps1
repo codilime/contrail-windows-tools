@@ -26,7 +26,7 @@ class Repo {
 
 function Clone-Repos {
     Param ([Parameter(Mandatory = $true, HelpMessage = "List of repos to clone")] [Repo[]] $Repos)
-    
+
     $Job.Step("Cloning repositories", {
         $CustomBranches = @($Repos.Where({ $_.Branch -ne $_.DefaultBranch }) |
                             Select-Object -ExpandProperty Branch -Unique)
