@@ -35,6 +35,10 @@ function New-RemoteSessionsToTestbeds {
     # TODO: get IPs from Env
     $Creds = Get-VMCreds
 
-    $Testbeds = $Env:TESTBED_HOSTNAMES.Split(",")
+    $Testbeds = Get-TestbedHostnamesFromEnv
     return New-RemoteSessions -VMNames $Testbeds -Credentials $Creds
+}
+
+function Get-TestbedHostnamesFromEnv {
+    return $Env:TESTBED_HOSTNAMES.Split(",")
 }
