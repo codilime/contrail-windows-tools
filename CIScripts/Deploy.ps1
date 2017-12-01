@@ -7,14 +7,9 @@
 
 $Job = [Job]::new("Deploy")
 
-# TODO: get IPs from Env
-$Creds = Get-VMCreds
 $ArtifactsDir = $Env:ARTIFACTS_DIR
 
-if($Env:TESTBED_HOSTNAMES) {
-    $Testbeds = $Env:TESTBED_HOSTNAMES.Split(",")
-    $Sessions = New-RemoteSessions -VMNames $Testbeds -Credentials $Creds
-    Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
-}
+$Sessions = New-RemoteSessionsToTestbeds
+Deploy-Testbeds -Sessions $Sessions -ArtifactsDir $Env:ARTIFACTS_DIR
 
 $Job.Done()

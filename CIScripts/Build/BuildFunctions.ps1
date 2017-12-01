@@ -103,6 +103,10 @@ function Invoke-DockerDriverBuild {
 
     $Job.PushStep("Docker driver build")
     $GoPath = $Env:GOPATH
+    if (-not $GoPath) {
+        $GoPath = pwd
+        $Env:GOPATH = $GoPath
+    }
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
     $Job.Step("Contrail-go-api source code generation", {
