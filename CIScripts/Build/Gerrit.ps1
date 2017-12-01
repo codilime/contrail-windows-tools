@@ -44,7 +44,7 @@ function Merge-GerritPatchset {
     Write-Output "Running Gerrit-trigger patchset merging..."
     Push-Location $MapRepoToDirectory[$Env:PROJECT]
     DeferExcept({
-        git -q fetch origin $Env:GERRIT_REFSPEC
+        git fetch -q origin $Env:GERRIT_REFSPEC
     })
     DeferExcept({
         git config user.email "you@example.com"
