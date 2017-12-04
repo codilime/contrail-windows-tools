@@ -3,7 +3,7 @@ stage('Preparation') {
         deleteDir()
 
         // Use the same repo and branch as was used to checkout Jenkinsfile:
-        def branch = scm.getUserRemoteConfigs()[0].refspec()
+        def branch = scm.getUserRemoteConfigs()[0].getRefspec()
         sh "echo $branch"
 
         // If not using `Pipeline script from SCM`, specify the branch manually:
