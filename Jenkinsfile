@@ -2,11 +2,7 @@ stage('Preparation') {
     node('builder') {
         deleteDir()
 
-        // Use the same repo and branch as was used to checkout Jenkinsfile:
-        scm checkout
-
-        // If not using `Pipeline script from SCM`, specify the branch manually:
-        // git branch: "master", url: 'https://github.com/codilime/contrail-windows-tools/'
+        // testing if contrail-windows-tools will persist from Jenkinsfile checkout
 
         stash name: "CIScripts", includes: "CIScripts/**"
     }
