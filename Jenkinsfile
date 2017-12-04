@@ -4,7 +4,7 @@ stage('Preparation') {
 
         // Use the same repo and branch as was used to checkout Jenkinsfile:
         def branch = scm.getUserRemoteConfigs()[0].getRefspec()
-        sh "echo $branch"
+        echo branch
 
         // If not using `Pipeline script from SCM`, specify the branch manually:
         git branch: branch, url: 'https://github.com/codilime/contrail-windows-tools/'
