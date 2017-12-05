@@ -101,6 +101,16 @@ function Invoke-DockerDriverBuild {
     }
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
+    $Job.Step("Installing dependency management tool for Go ", {
+        go get -u -v github.com/golang/dep/cmd/dep
+    })
+
+    Push-Location $srcPath
+    $Job.Step("Fetch third party packages ", {
+        & $Env:GOPATH\bin\dep.exe ensure -v
+    })
+    Pop-Location
+
     $Job.Step("Contrail-go-api source code generation", {
         DeferExcept({
             python tools/generateds/generateDS.py -q -f `
