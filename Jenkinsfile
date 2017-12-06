@@ -3,10 +3,10 @@ stage('Preparation') {
         deleteDir()
 
         // Use the same repo and branch as was used to checkout Jenkinsfile:
-        scm checkout
+        checkout scm
 
         // If not using `Pipeline script from SCM`, specify the branch manually:
-        // git branch: "master", url: 'https://github.com/codilime/contrail-windows-tools/'
+        // git branch: 'master', url: 'https://github.com/codilime/contrail-windows-tools/'
 
         stash name: "CIScripts", includes: "CIScripts/**"
     }
@@ -49,7 +49,7 @@ def SpawnedTestbedVMNames = ''
 
 stage('Provision') {
     node('ansible') {
-        sh 'echo "Tu będzie ansible"'
+        sh 'echo "TODO use ansible for provisioning"'
         // set $SpawnedTestbedVMNames here
     }
 }
@@ -82,8 +82,9 @@ stage('Test') {
 stage('Post-build') {
     node('master') {
         // cleanWs()
-        sh 'echo "Tu będzie cleanup środowiska"'
+        sh 'echo "TODO environment cleanup"'
         // unstash "buildLogs"
+        // TODO correct flags for rsync
         sh "echo rsync logs/ logs.opencontrail.org:${JOB_NAME}/${BUILD_ID}"
         // cleanWS{}
     }
