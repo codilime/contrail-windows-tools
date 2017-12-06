@@ -101,6 +101,8 @@ function Invoke-DockerDriverBuild {
     }
     $srcPath = "$GoPath/src/$DriverSrcPath"
 
+    New-Item -ItemType Directory ./bin
+
     $Job.Step("Installing dependency management tool for Go ", {
         go get -u -v github.com/golang/dep/cmd/dep
     })
@@ -119,7 +121,6 @@ function Invoke-DockerDriverBuild {
         })
     })
 
-    New-Item -ItemType Directory ./bin
     Push-Location bin
 
     $Job.Step("Installing test runner", {
