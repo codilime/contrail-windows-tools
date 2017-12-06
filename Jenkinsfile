@@ -6,7 +6,7 @@ stage('Preparation') {
         checkout scm
 
         // If not using `Pipeline script from SCM`, specify the branch manually:
-        git branch: branch, url: 'https://github.com/codilime/contrail-windows-tools/'
+        // git branch: branch, url: 'https://github.com/codilime/contrail-windows-tools/'
 
         stash name: "CIScripts", includes: "CIScripts/**"
     }
