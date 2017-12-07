@@ -88,12 +88,16 @@ function Invoke-DockerDriverBuild {
     New-Item -ItemType Directory ./bin
 
     $Job.Step("Installing dependency management tool for Go ", {
-        go get -u -v github.com/golang/dep/cmd/dep
+        DeferExcept({
+            go get -u -v github.com/golang/dep/cmd/dep
+        })
     })
 
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {
-        & $Env:GOPATH\bin\dep.exe ensure -v
+        DeferExcept({
+            & "$GoPath\bin\dep.exe" ensure -v
+        })
     })
     Pop-Location
 
