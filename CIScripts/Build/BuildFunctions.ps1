@@ -30,23 +30,19 @@ function Clone-Repos {
             # We must use -q (quiet) flag here, since git clone prints to stderr and tries to do some real-time
             # command line magic (like updating cloning progress). Powershell command in Jenkinsfile
             # can't handle it and throws a Write-ErrorException.
-            try {
-                DeferExcept({
-                    git clone -q -b $CustomMultiBranch $_.Url $_.Dir
-                })
-            } finally {
+            DeferExcept({
+                git clone -q -b $CustomMultiBranch $_.Url $_.Dir
+
                 if ($LASTEXITCODE -ne 0) {
                     Write-Host $("Cloning " +  $_.Url + " from branch: " + $_.Branch)
-                    DeferExcept({
-                        git clone -q -b $_.Branch $_.Url $_.Dir
-                    })
+                    git clone -q -b $_.Branch $_.Url $_.Dir
 
                     if ($LASTEXITCODE -ne 0) {
-                        throw "Cloning from " + $_.Url + " failed"
+                        # Write-Host instead of throw, because DeferExcept will throw anyway
+                        Write-Host "Cloning from " + $_.Url + " failed"
                     }
                 }
-            }
-
+            })
         })
     })
 }
