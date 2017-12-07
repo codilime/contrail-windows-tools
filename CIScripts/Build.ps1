@@ -3,6 +3,16 @@
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
+. $PSScriptRoot\Build\Gerrit.ps1
+
+$Job = [Job]::new("Build")
+
+$ToolsAllowBranchOverride = $true
+
+$IsTriggeredByGerrit = Test-Path Env:GERRIT_CHANGE_ID
+if($IsTriggeredByGerrit) {
+    Set-GerritEnvVars
+}
 
 $Repos = @(
     [Repo]::new($Env:DRIVER_REPO_URL, $Env:DRIVER_BRANCH, "src/github.com/codilime/contrail-windows-docker", "master"),
@@ -13,24 +23,47 @@ $Repos = @(
     [Repo]::new($Env:WINDOWSSTUBS_REPO_URL, $Env:WINDOWSSTUBS_BRANCH, "windows/", "windows"),
     [Repo]::new($Env:CONTROLLER_REPO_URL, $Env:CONTROLLER_BRANCH, "controller/", "windows3.1")
 )
+Clone-Repos -Repos $Repos
 
-$Job = [Job]::new("Build ")
+if($IsTriggeredByGerrit) {
+    Merge-GerritPatchset
+}
 
-Copy-Repos -Repos $Repos
-Invoke-ContrailCommonActions -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -VSSetupEnvScriptPath $Env:VS_SETUP_ENV_SCRIPT_PATH
+Prepare-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
-$ReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
+$IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
 
 $DockerDriverOutputDir = "output/docker_driver"
 $vRouterOutputDir = "output/vrouter"
 $AgentOutputDir = "output/agent"
+$LogsDir = "logs"
 
 New-Item -ItemType directory -Path $DockerDriverOutputDir
 New-Item -ItemType directory -Path $vRouterOutputDir
 New-Item -ItemType directory -Path $AgentOutputDir
+New-Item -ItemType directory -Path $LogsDir
 
-Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -OutputPath $DockerDriverOutputDir
-Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode -OutputPath $vRouterOutputDir
-Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH -SigntoolPath $Env:SIGNTOOL_PATH -CertPath $Env:CERT_PATH -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH -ReleaseMode $ReleaseMode -OutputPath $AgentOutputDir
+Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
+                         -SigntoolPath $Env:SIGNTOOL_PATH `
+                         -CertPath $Env:CERT_PATH `
+                         -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
+                         -OutputPath $DockerDriverOutputDir `
+                         -LogsPath $LogsDir
+
+Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
+                      -SigntoolPath $Env:SIGNTOOL_PATH `
+                      -CertPath $Env:CERT_PATH `
+                      -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
+                      -ReleaseMode $IsReleaseMode `
+                      -OutputPath $vRouterOutputDir `
+                      -LogsPath $LogsDir
+
+Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
+                  -SigntoolPath $Env:SIGNTOOL_PATH `
+                  -CertPath $Env:CERT_PATH `
+                  -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
+                  -ReleaseMode $IsReleaseMode `
+                  -OutputPath $AgentOutputDir `
+                  -LogsPath $LogsDir
 
 $Job.Done()

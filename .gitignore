@@ -7,3 +7,8 @@ build-*/
 
 ##### DSC #####
 CIScripts/JenkinsTesterDSC/JenkinsTester
+
+### temp files ###
+*.swp
+*.swo
+*~
