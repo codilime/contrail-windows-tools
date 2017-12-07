@@ -93,7 +93,7 @@ function Invoke-DockerDriverBuild {
 
     Push-Location $srcPath
     $Job.Step("Fetch third party packages ", {
-        & $Env:GOPATH\bin\dep.exe ensure -v
+        & "$Env:GOPATH\bin\dep.exe" ensure -v
     })
     Pop-Location
 
