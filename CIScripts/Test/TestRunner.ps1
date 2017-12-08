@@ -91,7 +91,7 @@ function Run-TestScenarios {
         Test-ICMPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         Test-TCPoMPLSoGRE -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         # TODO: Uncomment after JW-1129
-        # Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
+        Test-SNAT -Session $Sessions[0] -SNATConfiguration $SNATConfiguration -TestConfiguration $TestConfiguration
         Test-VRouterAgentIntegration -Session1 $Sessions[0] -Session2 $Sessions[1] -TestConfiguration $TestConfiguration
         Test-ComputeControllerIntegration -Session $Sessions[0] -TestConfiguration $TestConfiguration
         Test-MultipleSubnetsSupport -Session $Sessions[0] -TestConfiguration $TestConfiguration
