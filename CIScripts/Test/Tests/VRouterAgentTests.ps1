@@ -498,16 +498,11 @@ function Test-VRouterAgentIntegration {
         Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
                [Parameter(Mandatory = $true)] [TestConfiguration] $TestConfiguration)
 
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
-            -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
-            -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Name `
-            -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1.Subnets[0]
-        New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
-            -Name $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
-            -Network $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Name `
-            -Subnet $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy2.Subnets[0]
+        $TenantConfiguration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
+        Initialize-ComputeNode -Session $Session -TestConfiguration $TestConfiguration `
+            -Networks @($TenantConfiguration.NetworkWithPolicy1, $TenantConfiguration.NetworkWithPolicy2)
+
         Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
     }
 
@@ -517,7 +512,7 @@ function Test-VRouterAgentIntegration {
                [Parameter(Mandatory = $true)] [NetworkConfiguration[]] $Networks)
 
         Clear-TestConfiguration -Session $Session -TestConfiguration $TestConfiguration
-        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration
+        Initialize-ComputeServices -Session $Session -TestConfiguration $TestConfiguration -NoNetwork $true
         Foreach ($Network in $Networks) {
             New-DockerNetwork -Session $Session -TestConfiguration $TestConfiguration `
                 -Name $Network.Name `
@@ -1053,22 +1048,22 @@ function Test-VRouterAgentIntegration {
         $Job.StepQuiet($MyInvocation.MyCommand.Name, {
             Write-Host "===> Running: Test-MultihostUdpTraffic"
 
+            $TenantConfiguration = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration
+
             Write-Host "======> Given: Contrail compute services are started on two compute nodes"
             Initialize-ComputeNode `
                 -Session $Session1 `
                 -TestConfiguration $TestConfiguration `
-                -Networks @($TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1)
+                -Networks @($TenantConfiguration.NetworkWithPolicy1)
             Initialize-ComputeNode `
                 -Session $Session2 `
                 -TestConfiguration $TestConfiguration `
-                -Networks @($TestConfiguration.DockerDriverConfiguration.TenantConfiguration.NetworkWithPolicy1)
+                -Networks @($TenantConfiguration.NetworkWithPolicy2)
             Start-Sleep -Seconds $WAIT_TIME_FOR_AGENT_INIT_IN_SECONDS
 
             Write-Host "======> When 2 containers belonging to different networks are running"
-            # TODO: Two separate networks with policies should eventually be used instead of
-            # one network without a policy.
-            $Network1Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
-            $Network2Name = $TestConfiguration.DockerDriverConfiguration.TenantConfiguration.DefaultNetworkName
+            $Network1Name = $TenantConfiguration.NetworkWithPolicy1.Name
+            $Network2Name = $TenantConfiguration.NetworkWithPolicy2.Name
 
             $Container1Name = "jolly-lumberjack"
             $Container2Name = "juniper-tree"
