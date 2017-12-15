@@ -320,7 +320,7 @@ function Invoke-AgentBuild {
             "src/base:queue_task_test",
             "src/base:subset_test",
             "src/base:patricia_test",
-            "src/base:boost_US_test"
+            "src/base:boost_US_test",
 
             # oper
             "agent:test_agent_sandesh",
@@ -337,7 +337,26 @@ function Invoke-AgentBuild {
             "agent:test_qos_config",
             "agent:test_oper_xml",
             "agent:ifmap_dependency_manager_test",
-            "agent:test_physical_devices"
+            "agent:test_physical_devices",
+
+            #cmn
+            "agent:cmn",
+
+            #pkt
+            "agent:test_flow_mgmt_route",
+            "agent:test_tsn_flow",
+            "agent:test_pkt_flow_limits",
+            "agent:test_pkt_linklocal",
+            "agent:test_flow_audit",
+            "agent:test_flow_mgr_instances",
+            "agent:test_flow_policy",
+            "agent:test_flow_freelist",
+            "agent:test_ecmp_mx",
+            "agent:test_fip_dst_ecmp",
+            "agent:test_fip_src_ecmp",
+            "agent:test_ecmp_local",
+            "agent:test_bgp_service"
+
         )
 
         $TestsString = ""
