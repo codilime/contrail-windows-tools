@@ -328,11 +328,11 @@ function Initialize-TestConfiguration {
     Write-Host "Initializing Test Configuration"
 
     $NRetries = 3;
-    1..$NRetries | % {
+    foreach ($i in 1..$NRetries) {
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
         Enable-DockerDriver -Session $Session -AdapterName $TestConfiguration.AdapterName -ControllerIP $TestConfiguration.ControllerIP -Configuration $TestConfiguration.DockerDriverConfiguration -WaitTime 0
 
-        $WaitForSeconds = $_ * 600 / $NRetries;
+        $WaitForSeconds = $i * 600 / $NRetries;
         $SleepTimeBetweenChecks = 10;
         $MaxNumberOfChecks = $WaitForSeconds / $SleepTimeBetweenChecks
 
@@ -348,7 +348,7 @@ function Initialize-TestConfiguration {
         }
 
         if ($Res -ne $true) {
-            if ($_ -eq $NRetries) {
+            if ($i -eq $NRetries) {
                 throw "Docker driver was not enabled."
             } else {
                 Write-Host "Docker driver was not enabled, retrying."
